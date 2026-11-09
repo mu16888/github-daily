@@ -40,7 +40,7 @@
       "platform": "juejin",
       "status": "dry_run",
       "url": "",
-      "detail": "已组装掘金草稿请求（https://api.juejin.cn/content_api/v1/article_draft/create?aid=2608&uuid=7691146270717543955&spider=0，3721 字符），未发送",
+      "detail": "已组装掘金草稿请求（https://api.juejin.cn/content_api/v1/article_draft/create?aid=2608&uuid=***&spider=0，3721 字符），未发送",
       "http_status": null
     },
     {

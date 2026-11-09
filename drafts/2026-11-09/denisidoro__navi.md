@@ -100,7 +100,7 @@ The recommended way to install **navi** is by running:
 | 话题标签 | bash、cheatsheets、cli、command-line、rust、shell、snippet、snippets |
 | 创建时间 | 2019-09-20 |
 | 最近更新 | 2026-10-16 |
-| 数据采集时间 | 2026-11-09T13:09:07+00:00 |
+| 数据采集时间 | 2026-11-09T13:12:39+00:00 |
 
 ## 八、需要注意
 
