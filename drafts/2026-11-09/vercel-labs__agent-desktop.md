@@ -32,7 +32,7 @@ README 里**没有检出**作者明确写的 Why / Motivation / Problem / 背景
 > Computer use CLI for AI agents
 
 用大白话说：这是一个主要用 **Rust** 写的开源项目，托管在 GitHub，
-目前有 **19919** 颗 star，开源许可证是 **Apache-2.0**。
+目前有 **19953** 颗 star，开源许可证是 **Apache-2.0**。
 项目地址：[vercel-labs/agent-desktop](https://github.com/vercel-labs/agent-desktop)。
 
 ## 三、核心功能（README 原文）
@@ -52,7 +52,7 @@ Your agent calls the CLI, or the C library in process. Both run the same core, w
 - 有明确开源许可证（Apache-2.0）
 - README 中未检出需要自行编译源码的步骤
 - README 中未检出数据库 / API key / 付费服务的强制要求
-- star 数处于活跃区间（19919）
+- star 数处于活跃区间（19953）
 
 综合得分 **16** 分（门槛 9 分）。
 评分只看「有没有写清楚怎么装、要不要自己编译、有没有许可证、是否依赖额外服务」这类客观信号，
@@ -94,13 +94,13 @@ Release archives and building from source are covered in [Installation](https://
 | 项目 | 内容 |
 | --- | --- |
 | 仓库 | [vercel-labs/agent-desktop](https://github.com/vercel-labs/agent-desktop) |
-| Star 数 | 19919 |
+| Star 数 | 19953 |
 | 主要语言 | Rust |
 | 许可证 | Apache-2.0 |
 | 话题标签 | accessibility、accessibility-api、ai-agents、automation、cli、computer-use、computer-use-agent、computer-use-agents |
 | 创建时间 | 2026-02-19 |
 | 最近更新 | 2026-11-08 |
-| 数据采集时间 | 2026-11-09T09:19:44+00:00 |
+| 数据采集时间 | 2026-11-09T10:31:54+00:00 |
 
 ## 八、需要注意
 
