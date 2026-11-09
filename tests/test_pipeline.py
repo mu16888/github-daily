@@ -9,6 +9,7 @@ import json
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -20,7 +21,7 @@ from src.discover import (  # noqa: E402
     Repo, extract_features, extract_install_blocks, extract_intro, extract_quickstart, score,
 )
 from src.main import load_yaml, quota_used, seen_repos  # noqa: E402
-from src.publish import CsdnPublisher, ZhihuPublisher, all_publishers  # noqa: E402
+from src.publish import CsdnPublisher, JuejinPublisher, ZhihuPublisher, all_publishers  # noqa: E402
 from src.seo import build as seo_build, load_seo  # noqa: E402
 
 SETTINGS = load_yaml(ROOT / "config" / "settings.yaml")
@@ -183,6 +184,19 @@ class TestCompose(unittest.TestCase):
         self.assertNotIn("TODO", a["markdown"])
 
 
+class _FakeResp:
+    """模拟 requests.Response：可返回 JSON，也可模拟 WAF 拦截页（.json() 抛错）。"""
+
+    def __init__(self, status_code: int, payload):
+        self.status_code = status_code
+        self._payload = payload
+
+    def json(self):
+        if isinstance(self._payload, Exception):
+            raise self._payload
+        return self._payload
+
+
 class TestPublishers(unittest.TestCase):
     def test_missing_secrets_is_skipped_not_published(self):
         pubs = all_publishers(PLATFORMS, SETTINGS)
@@ -227,6 +241,54 @@ class TestPublishers(unittest.TestCase):
         self.assertEqual(body["type"], "original")
         self.assertEqual(headers["x-ca-signature-headers"], "x-ca-key,x-ca-nonce")
         self.assertIn("x-ca-signature", headers)
+
+    def _juejin_publish(self, publish_resp, draft_resp=None):
+        pub = JuejinPublisher(PLATFORMS["platforms"]["juejin"], SETTINGS,
+                              {"JUEJIN_COOKIE": "c", "JUEJIN_UUID": "u"}, dry_run=False)
+        draft = draft_resp or _FakeResp(200, {"err_no": 0, "data": {"draft_id": "d1"}})
+        article = {"title": "t", "html": "<p>x</p>", "markdown": "# t", "brief": "b"}
+        with patch.object(pub.session, "post", side_effect=[draft, publish_resp]):
+            return pub.publish(article)
+
+    def test_juejin_waf_html_response_is_failed_not_published(self):
+        # 境外 IP 被风控时常见：HTTP 403 + HTML，.json() 抛错 -> 空 dict。
+        # 修复前这里会被误判为 published。
+        r = self._juejin_publish(_FakeResp(403, ValueError("not json")))
+        self.assertEqual(r.status, "failed")
+        self.assertEqual(r.http_status, 403)
+        self.assertIn("http=403", r.detail)
+
+    def test_juejin_empty_json_is_failed_not_published(self):
+        r = self._juejin_publish(_FakeResp(200, {}))
+        self.assertEqual(r.status, "failed")
+
+    def test_juejin_explicit_success_is_published(self):
+        r = self._juejin_publish(_FakeResp(200, {
+            "err_no": 0, "data": {"article_url": "https://juejin.cn/post/1"}}))
+        self.assertEqual(r.status, "published")
+        self.assertEqual(r.url, "https://juejin.cn/post/1")
+
+    def test_juejin_draft_failure_never_calls_publish(self):
+        pub = JuejinPublisher(PLATFORMS["platforms"]["juejin"], SETTINGS,
+                              {"JUEJIN_COOKIE": "c", "JUEJIN_UUID": "u"}, dry_run=False)
+        bad = _FakeResp(200, {"err_no": 1, "err_msg": "risk control"})
+        with patch.object(pub.session, "post", return_value=bad) as mocked:
+            r = pub.publish({"title": "t", "html": "<p>x</p>", "markdown": "# t", "brief": "b"})
+        self.assertEqual(r.status, "failed")
+        self.assertEqual(mocked.call_count, 1)   # 绝不能带着空 draft_id 去发第二步
+
+    def test_csdn_http_error_is_failed_even_with_code_200(self):
+        pub = CsdnPublisher(PLATFORMS["platforms"]["csdn"], SETTINGS, {"CSDN_COOKIE": "c"}, dry_run=False)
+        ok, _link, detail = pub.judge(_FakeResp(403, {"code": 200, "data": {"url": "x"}}))
+        self.assertFalse(ok)
+        self.assertIn("http=403", detail)
+
+    def test_csdn_code_200_http_200_is_success(self):
+        pub = CsdnPublisher(PLATFORMS["platforms"]["csdn"], SETTINGS, {"CSDN_COOKIE": "c"}, dry_run=False)
+        ok, link, _detail = pub.judge(_FakeResp(200, {
+            "code": 200, "data": {"url": "https://blog.csdn.net/x"}}))
+        self.assertTrue(ok)
+        self.assertEqual(link, "https://blog.csdn.net/x")
 
 
 class TestSeo(unittest.TestCase):
