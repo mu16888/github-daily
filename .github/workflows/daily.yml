@@ -1,0 +1,94 @@
+name: daily-github-picks
+
+# Wake every 15 min (UTC 00:08-03:53 = 08:08-11:53 Beijing).
+# src/schedule.py derives one deterministic-but-varying target time per day;
+# only the wake-up that reaches it publishes. Off-peak minutes avoid queueing.
+on:
+  schedule:
+    - cron: '8,23,38,53 0-3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Draft only, do not publish'
+        type: boolean
+        default: true
+      force:
+        description: 'Ignore timing gate and run now'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-github-picks
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    # <=15 min alignment sleep + <=14 min platform stagger + pipeline
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Human-like timing gate
+        id: gate
+        env:
+          SCHEDULE_FORCE: ${{ inputs.force && 'true' || 'false' }}
+        run: |
+          ARGS="--check --align"
+          if [ "$SCHEDULE_FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
+          python -m src.schedule $ARGS
+
+      - name: Offline unit tests
+        if: steps.gate.outputs.run == 'true'
+        run: python -m unittest discover -s tests -v
+
+      - name: Run pipeline
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ZHIHU_APP_KEY: ${{ secrets.ZHIHU_APP_KEY }}
+          ZHIHU_APP_SECRET: ${{ secrets.ZHIHU_APP_SECRET }}
+          JUEJIN_COOKIE: ${{ secrets.JUEJIN_COOKIE }}
+          JUEJIN_UUID: ${{ secrets.JUEJIN_UUID }}
+          CSDN_COOKIE: ${{ secrets.CSDN_COOKIE }}
+          PIPELINE_DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          if [ "$PIPELINE_DRY_RUN" = "true" ]; then
+            python -m src.main --dry-run --dispatched
+          else
+            python -m src.main --dispatched
+          fi
+
+      # Daily commits also keep scheduled workflows alive
+      # (GitHub disables them after 60 days of repo inactivity).
+      - name: Commit drafts and state
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add drafts state run-summary.json
+          if git diff --staged --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "chore: daily picks $(date -u +%F)"
+            git push
+          fi
+
+      - name: Upload run summary
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: run-summary-${{ github.run_id }}
+          path: run-summary.json
+          if-no-files-found: ignore
