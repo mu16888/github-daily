@@ -335,6 +335,11 @@ class TestCredentialHygiene(unittest.TestCase):
         self.assertIn("sessionid=***", out)
         self.assertNotIn("abc", out)
 
+    def test_redact_masks_secret_derived_uuid_in_url(self):
+        out = redact("已组装请求（https://api.juejin.cn/x?aid=2608&uuid=7691146270717543955&spider=0）")
+        self.assertIn("uuid=***", out)
+        self.assertNotIn("7691146270717543955", out)
+
     def test_result_is_redacted_before_any_file_write(self):
         r = Result("juejin", "failed", url="https://juejin.cn/post/1?token=SECRET",
                    detail="InvalidHeader: cookie\n a=1; b=2; c=3; sessionid=abc; d=4")
