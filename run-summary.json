@@ -2,7 +2,7 @@
   "date": "2026-11-09",
   "picked": 1,
   "dry_run": true,
-  "publish_enabled": false,
+  "publish_enabled": true,
   "quota": {
     "zhihu": 1,
     "juejin": 1,
@@ -10,28 +10,45 @@
   },
   "drafts": [
     {
-      "repo": "vercel-labs/agent-desktop",
-      "title": "agent-desktop 解决什么问题？功能、安装与使用完整介绍",
+      "repo": "jianchang512/pyvideotrans",
+      "title": "pyvideotrans 解决什么问题？功能、安装与使用完整介绍",
       "platform_titles": {
-        "zhihu": "agent-desktop 解决什么问题？19953 Star 的开源项目，先看痛点再装",
-        "juejin": "agent-desktop 解决什么问题？19953 Star 的开源项目，功能与用法一次讲清",
-        "csdn": "agent-desktop 解决什么问题？19953 Star 的开源项目，安装详解"
+        "zhihu": "pyvideotrans 解决什么问题？19686 Star 的开源项目，先看痛点再装",
+        "juejin": "pyvideotrans 解决什么问题？19686 Star 的开源项目，功能与用法一次讲清",
+        "csdn": "pyvideotrans 解决什么问题？19686 Star 的开源项目，安装详解"
       },
-      "keywords": [
-        "自动化",
-        "命令行工具",
-        "MCP",
-        "Rust"
-      ],
+      "keywords": [],
       "score": 16,
       "files": [
-        "drafts/2026-11-09/vercel-labs__agent-desktop.md",
-        "drafts/2026-11-09/vercel-labs__agent-desktop.html"
+        "drafts/2026-11-09/jianchang512__pyvideotrans.md",
+        "drafts/2026-11-09/jianchang512__pyvideotrans.html"
       ]
     }
   ],
-  "publish": [],
+  "publish": [
+    {
+      "platform": "zhihu",
+      "status": "skipped",
+      "url": "",
+      "detail": "官方规范要求用户确认后才可 confirmed:true；settings.zhihu.standing_consent=false",
+      "http_status": null
+    },
+    {
+      "platform": "juejin",
+      "status": "dry_run",
+      "url": "",
+      "detail": "已组装掘金草稿请求（https://api.juejin.cn/content_api/v1/article_draft/create?aid=2608&uuid=7691146270717543955&spider=0，4557 字符），未发送",
+      "http_status": null
+    },
+    {
+      "platform": "csdn",
+      "status": "dry_run",
+      "url": "",
+      "detail": "已组装请求（https://bizapi.csdn.net/blog-console-api/v3/mdeditor/saveArticle，正文 10997 字符），未实际发送",
+      "http_status": null
+    }
+  ],
   "published_count": 0,
-  "skipped_count": 0,
+  "skipped_count": 1,
   "failed_count": 0
 }
