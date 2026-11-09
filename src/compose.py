@@ -117,7 +117,7 @@ def _dedup_quickstart(quick: str, install_blocks: list[str]) -> str:
 
     def repl(m: re.Match) -> str:
         body = m.group(1).strip()
-        return "（这段安装命令已在上一节原样给出，此处不再重复。）" if body in install_blocks else m.group(0)
+        return "（这条命令上面贴过了，不重复。）" if body in install_blocks else m.group(0)
 
     return re.sub(r"```[^\n]*\n(.*?)```", repl, quick, flags=re.S)
 
@@ -128,59 +128,51 @@ def compose(repo: Repo, date: str, cfg: dict, seo: dict | None = None) -> dict[s
     seo = seo or load_seo()
     s = seo_build(repo, date, seo)
     # H1 用统一的通用式标题：痛点词前置，再带功能 / 安装 / 使用三个搜索长尾词
-    title = f"{name} 解决什么问题？功能、安装与使用完整介绍"
+    title = f"{name} 解决什么问题？功能、安装与上手"
 
-    signals = "\n".join(f"- {s}" for s in repo.signals) or "- （未检测到明确的加分信号）"
+    signals = "\n".join(f"- {s}" for s in repo.signals) or "- 说明文档里能看的东西不多"
     installs = "\n".join(f"```\n{b}\n```" for b in repo.install_blocks)
     install_note = (
-        "以下命令**逐字摘自该仓库 README**，未做任何改写。执行前请先到仓库页面确认是否有更新。"
+        "下面这些命令是仓库说明里现成的，复制下来就能跑。动手前顺手去仓库页面扫一眼，作者可能改过版本。"
         if repo.install_blocks else
-        "README 中未检出可直接复制的安装命令，本文不代为猜测，请到仓库页面查看安装说明。"
+        "仓库说明里没给能直接复制的安装命令，怎么装得去仓库页面看。"
     )
     quick = _dedup_quickstart(repo.quickstart_excerpt.strip(), repo.install_blocks)
-    quick_section = (
-        "以下同样摘自 README 的 Quick Start / 用法 章节原文：\n\n" + quick
-        if quick else
-        "README 里没有检出明确的 Quick Start 章节。本文不编写未经证实的上手步骤，建议直接看仓库 README。"
-    )
-    topics = "、".join(repo.topics[:8]) if repo.topics else "未标注"
-    desc = repo.description or "（仓库未填写 description）"
+    # Quick Start 若只剩跟安装节重复的那条命令，整节略掉，别留一句占位话撑空节
+    quick_body = quick.replace("（这条命令上面贴过了，不重复。）", "").strip()
+    if quick_body:
+        usage_section = "## 装完怎么上手\n\n仓库说明里 Quick Start（快速上手）那部分写了这些。\n\n" + quick_body + "\n\n"
+    else:
+        usage_section = ""
+    topics = "、".join(repo.topics[:8]) if repo.topics else "没标"
+    desc = repo.description or "（仓库没填简介）"
 
     # 痛点章节：只引用作者自己在 README 里写的 Why / Motivation / Problem 原文。
     # 没有这类章节就如实说明「未检出」，绝不代为编造使用场景或用户痛点。
     if repo.problem_excerpt:
         problem_block = (
-            "**作者在 README 里怎么说的（原文摘录，未改写）：**\n\n"
+            "作者在仓库说明里写了做这个东西的缘由。\n\n"
             + repo.problem_excerpt
-            + "\n\n> 以上为仓库原文。具体痛点以作者表述为准，本文不额外补充未经写明的使用效果。"
         )
     else:
         intro_part = ""
         if repo.intro_excerpt.strip() and repo.intro_excerpt.strip() != desc:
-            intro_part = "**README 开头原文：**\n\n" + _quote(repo.intro_excerpt) + "\n\n"
+            intro_part = "说明开头是这么写的。\n\n" + _quote(repo.intro_excerpt) + "\n\n"
         problem_block = (
-            "README 里**没有检出**作者明确写的 Why / Motivation / Problem / 背景 章节，"
-            "所以这里不编造痛点。下面引用的都是仓库里的原话，请据此先判断它对不对口：\n\n"
+            "仓库说明没专门写「为什么要做这个」，能看的只有作者自己那几句话。\n\n"
             + intro_part
-            + "**仓库描述（原文）：**\n\n> " + desc + "\n\n"
-            f"把上面的自述换个说法：{name} 面向的是「{desc}」这件事。"
-            "这只是复述，不是作者原话，也不代表任何未写明的成效。\n\n"
-            f"能查证的领域标签（GitHub topics）：{topics}。"
+            + "仓库简介就一句。\n\n> " + desc + "\n\n"
+            + f"挂的标签是 {topics}，能看出它大概跟什么沾边。"
         )
 
     if repo.features_excerpt:
-        features_block = (
-            "以下内容**逐字摘自 README 的 Features / How it works / 功能 章节原文**：\n\n"
-            + repo.features_excerpt
-        )
+        features_block = "作者在说明里列了这些。\n\n" + repo.features_excerpt
     else:
         features_block = (
-            "README 里没有检出独立的 Features / 功能 章节，本文不代为罗列功能。"
-            "能确认的只有仓库自述与元数据：\n\n"
-            f"- 仓库自述：{desc}\n"
-            f"- 主要语言：{repo.language}\n"
-            f"- GitHub topics：{topics}\n"
-            "- 可复制的安装命令见下一节（同样来自 README 原文）"
+            "说明里没单列功能清单，能确认的只有仓库简介和这几项。\n\n"
+            f"- 作者原话，{desc}\n"
+            f"- 主要用 {repo.language} 写\n"
+            f"- 标签有 {topics}\n"
         )
 
     faq_md = "\n".join(f"**{item['q']}**\n\n{item['a']}\n" for item in s["faq"])
@@ -189,85 +181,60 @@ def compose(repo: Repo, date: str, cfg: dict, seo: dict | None = None) -> dict[s
 
 {s['seo_lead']}
 
-> 本文由程序自动生成，所有事实来自 GitHub REST API 与项目 README 原文，采集日期 {date}。
-> 文中不添加任何未经证实的安装方式、版本号或使用效果。
-
-## 一、{name} 解决什么问题（先看痛点）
+## 它解决什么问题
 
 {problem_block}
 
-**先判断对不对口，再往下看功能与安装。** 如果上面说的并不是你要解决的问题，这个项目再热门也不用装。
-
-## 二、{name} 是什么
-
-仓库自述（原文）：
+## 这是个什么项目
 
 > {desc}
 
-用大白话说：这是一个主要用 **{repo.language}** 写的开源项目，托管在 GitHub，
-目前有 **{repo.stars}** 颗 star，开源许可证是 **{repo.license}**。
-项目地址：[{repo.full_name}]({repo.html_url})。
+主要用 **{repo.language}** 写，GitHub 上攒了 **{repo.stars}** 颗星（就是收藏数），用的是 {repo.license} 协议。
+协议管的是你能不能拿去商用、改了要不要公开，用之前扫一眼。仓库地址：[{repo.full_name}]({repo.html_url})。
 
-## 三、核心功能（README 原文）
+## 能做什么
 
 {features_block}
 
-## 四、为什么说它适合新手
+## 新手装起来麻烦吗
 
-打分依据全部来自 README 与仓库元数据中**实际检测到**的信号，不是主观推荐：
+第一次上手最容易卡在两件事。要不要自己把源码做成能跑的软件，说明里有没有现成命令。这个仓库查到的是这些。
 
 {signals}
 
-综合得分 **{repo.score}** 分（门槛 {cfg['daily']['min_score']} 分）。
-评分只看「有没有写清楚怎么装、要不要自己编译、有没有许可证、是否依赖额外服务」这类客观信号，
-不看项目热度排名，也不代表功能强弱评价。
-
-## 五、{name} 安装教程（README 原文命令）
+## 安装教程
 
 {install_note}
 
 {installs}
 
-如果命令跑不通，优先检查三件事：README 是否已更新、本机是否装了对应语言的运行时、
-以及项目是否要求特定版本。这些都请以仓库页面为准。
+装不上先别急着重试。看看说明是不是改过命令，再看电脑上装没装它要的环境、版本对不对。
 
-## 六、{name} 怎么上手
-
-{quick_section}
-
-## 七、项目档案
+{usage_section}## 项目档案
 
 | 项目 | 内容 |
 | --- | --- |
 | 仓库 | [{repo.full_name}]({repo.html_url}) |
-| Star 数 | {repo.stars} |
-| 主要语言 | {repo.language} |
-| 许可证 | {repo.license} |
-| 话题标签 | {topics} |
+| 收藏数 | {repo.stars} |
+| 主要用什么写 | {repo.language} |
+| 开源协议 | {repo.license} |
+| 标签 | {topics} |
 | 创建时间 | {repo.created_at[:10]} |
 | 最近更新 | {repo.pushed_at[:10]} |
-| 数据采集时间 | {f['captured_at']} |
+| 数据记于 | {f['captured_at']} |
 
-## 八、需要注意
+## 动手前留意
 
-- 本文只做介绍，**不是安装教程的替代品**；项目随时可能改安装方式，一切以仓库 README 为准。
-- 许可证是 {repo.license}，商用或二次分发前请自行确认条款。
-- star 数是采集瞬间的快照，会变化。
-- 本文由程序按模板生成，未使用大模型改写，因此读起来偏「说明书」风格；好处是数字和命令不会被编造。
+- 项目还在改，命令隔段时间可能就不一样了。
+- {repo.license} 协议。拿去商用或者改了再发，先看条款让不让。
 
-## 九、常见问题（{name} FAQ）
+## 常见问题
 
 {faq_md}
 
-## 十、信息来源
-
-- GitHub REST API：`/repos/{repo.full_name}` 与 `/search/repositories`
-- 项目 README 原文：`{repo.html_url}/blob/{repo.default_branch}/README.md`
-- 采集脚本：[github-daily](https://github.com/mu16888/github-daily)
-
 ---
 
-*本文由 GitHub Actions 自动生成并发布。若信息有误，请以项目仓库为准。*
+{name} 还在改，装之前记得翻一眼仓库说明。
 """
 
     return {
