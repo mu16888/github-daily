@@ -61,10 +61,10 @@ schedule:
 publish:
   # 总开关。为 false 时只出稿、不调用任何发布接口。
   enabled: true
-  # 2026-11-09 22:28 锋哥确认「跑吧」：掘金 Cookie 已轮换、A 通道已切，开放真发。
-  # 首次失败的两处（掘金 Cookie 前缀 / CSDN 签名串）已修，本次为人工核验的真发演练。
-  # 改回 true 即恢复「定时跑只出稿归档、绝不对外发文」。
-  dry_run: false
+  # 真发演练止损：掘金 published，CSDN 返回「博主不存在」(http 400) 失败。
+  # 待 CSDN 账号/接口问题查清并修复后再改回 false，避免每天定时跑白失败一次。
+  # 保持 true 时定时跑只出稿归档，绝不对外发文。
+  dry_run: true
   # 单平台失败不影响其他平台，也不影响出稿归档
   continue_on_error: true
 
