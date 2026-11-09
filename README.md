@@ -14,8 +14,9 @@
 - **不编造事实**：所有安装命令、star 数、许可证、创建时间只来自 GitHub API 与 README 原文，安装代码块逐字摘录。没有检出靠谱项目时当天不发文，不凑数。
 - **痛点也不编**：文章第一节讲「解决什么问题」，只引用 README 里作者自己写的 Why / Motivation / Problem 原文；没写就如实标注「未检出」，不代为编造使用场景或效果。结构是先痛点 → 再功能 → 再安装用法。
 - **不用大模型**：GitHub Models 已于 2026-07-30 退役，云端没有官方免费 LLM。文章按结构化模板生成，读起来偏说明书，但数字和命令不会被"润色"改错。
-- **不破解反爬**：知乎走官方 OpenAPI；掘金与 CSDN 是登录态内部接口，靠你自己的 Cookie，接口变更或风控时会如实报失败，不伪装成成功。
-- 三个平台里**只有知乎有官方发布 API**。掘金和 CSDN 的接口由社区实测整理，官方从未发布公开 REST API。
+- **不破解反爬**：知乎可选官方 OpenAPI 或登录态网页会话；掘金与 CSDN 是登录态内部接口，靠你自己的 Cookie。接口变更或风控时会如实报失败，不伪装成成功。
+- 三个平台里**只有知乎的官方 OpenAPI 有公开文档**。知乎网页会话、掘金、CSDN 的接口由社区抓包整理，官方从未发布公开 REST API，随时可能变。
+- **Cookie 与异常消息一律脱敏**：所有 Cookie 先去标签名/换行再使用，所有写进 `run-summary.json` / 日志的结果在构造时统一脱敏，避免把登录态带进公开仓库。
 - **每天每平台只发 1 篇**：这是三平台限额的交集（掘金硬性 1 篇/天且第 2 篇会静默失效），代码里有硬闸门，手动重复触发也不会刷屏。详见 [DESIGN.md §3.1](DESIGN.md)。
 - **不卡点发布**：不会每天固定同一分钟发，也不会三家平台同一秒三连发。见下一节。
 
@@ -73,7 +74,7 @@ src/discover.py               候选搜索 / README 事实抽取 / 可解释打�
 src/compose.py                中文成稿 + 自带 Markdown→HTML
 src/seo.py                    平台化标题 / 摘要 / 标签 / FAQ
 src/schedule.py               仿人工发布时间 / 到点闸门 / 三平台错峰
-src/publish.py                知乎 / 掘金 / CSDN 三个发布适配器
+src/publish.py                三平台适配器 + 知乎 A/B/C 通道路由 + Cookie 清洗 + 统一脱敏 + 严格成功判定
 src/main.py                   编排、每日配额闸门、去重台账、运行摘要
 config/settings.yaml          打分权重、每日篇数、配额、发布窗口、发布开关、长期授权
 config/platforms.yaml         端点 / 字段 / 长度限制 / 来源标注
@@ -83,26 +84,44 @@ drafts/                       每日成稿归档
 tests/                        离线单测
 ```
 
-## 三个开关决定行为
+## 知乎三条通道（A / B / C）
+
+`config/settings.yaml` 的 `zhihu.mode`：
+
+| 模式 | 通道 | 凭据 | 说明 |
+| --- | --- | --- | --- |
+| `off` | A 跳过 | 无 | 如实 `skipped`，只发掘金 + CSDN |
+| `web` | B 登录态网页会话 | `ZHIHU_COOKIE` | 不需要内测；建草稿 → 写正文 → 尝试公开。第三步可能需要前端动态签名 `x-zse-96`，不保证成功，失败会保留草稿；`web_auto_publish: false` 可退回「只自动建草稿」 |
+| `openapi` | C 官方 Publish OpenAPI | `ZHIHU_APP_KEY` + `ZHIHU_APP_SECRET` | APP_SECRET 需「发布者」内测资格，另需 `standing_consent: true` |
+| `auto`（默认） | 自动择优 | — | 有官方凭据且已授权走 C，否则有 `ZHIHU_COOKIE` 走 B，都没有按 A 跳过 |
+
+选 B 时必须把 `ZHIHU_COOKIE` 注入 workflow（该文件受 `workflow` scope 限制，需本人在 GitHub 网页整份覆盖提交），详见 [SECRETS.md §三](SECRETS.md)。
+
+## 开关决定行为
 
 `config/settings.yaml`：
 
-| 开关 | 默认 | 含义 |
+| 开关 | 当前值 | 含义 |
 | --- | --- | --- |
-| `publish.enabled` | `false` | 总开关；false 时只出稿归档 |
-| `publish.dry_run` | `true` | true 时只组装请求，不向发布端点发请求 |
-| `zhihu.standing_consent` | `false` | 知乎官方要求用户确认后才能 `confirmed:true`；改成 true 代表你一次性长期授权，且不会再逐篇人工预览 |
+| `publish.enabled` | `true` | 总开关；false 时连适配器都不实例化 |
+| `publish.dry_run` | **`true`（已暂停发文）** | true 时只组装请求，不向发布端点发请求 |
+| `zhihu.mode` | `auto` | A/B/C 通道路由，见上表 |
+| `zhihu.web_auto_publish` | `true` | B 通道是否尝试第三步公开发布 |
+| `zhihu.standing_consent` | `false` | 仅 C 通道：知乎官方要求确认后才能 `confirmed:true`；改 true 代表一次性长期授权 |
 
-三者都要显式打开，才会真正自动发文。这是刻意设计：默认状态下这个仓库怎么跑都不会对外发东西。
+**当前 `dry_run=true`，定时跑只出稿归档，怎么跑都不会对外发文。**
+恢复自动发文的顺序见 [SECRETS.md §五](SECRETS.md)：先作废并重抓泄露的掘金 Cookie，
+补知乎凭据，演练，再把 `dry_run` 改 `false`，手动真发一次人工核稿。
 
 ## 发布结果判定
 
 | 状态 | 含义 | 台账行为 |
 | --- | --- | --- |
 | `published` | 平台明确返回成功 | 记录发布 URL 与时间 |
-| `skipped` | 缺 Secrets / 未开长期授权 | 不写发布记录 |
+| `drafted` | 知乎 B 草稿模式：已建草稿 + 写入正文，未公开 | 记录草稿 URL，占当天名额，不堆草稿 |
+| `skipped` | 缺 Secrets / 通道关闭 / 未开长期授权 | 不写发布记录 |
 | `dry_run` | 只组装请求 | 演练无副作用，台账完全不动 |
-| `failed` | 接口返回失败或网络异常 | 不写发布记录 |
+| `failed` | 接口返回失败、空响应、WAF 拦截页或网络异常 | 不写发布记录 |
 
 正式运行（非演练）出稿后，该项目即进入去重台账，保证同一个项目不会被重复推荐。
 发布失败**不会自动重发同一篇**（避免重复刷屏）；确需补发，删掉 `state/published.json`
@@ -111,8 +130,10 @@ tests/                        离线单测
 `schedule.last_dispatched` 这个调度标记，避免当天 15 分钟一次的唤醒把流水线重复跑 16 遍。
 本地直接跑 `python -m src.main --dry-run` 不传 `--dispatched`，完全不碰台账。
 
-知乎**必须**看响应 JSON 的 `status == 0`，HTTP 200 也可能是失败；CSDN 看 `code == 200`；
-掘金是「建草稿 → 发布」两步。这些判定都在 `src/publish.py` 里，不靠猜。
+知乎 C 必须 HTTP 200 且响应 `status == 0`；知乎 B 必须 HTTP 200 + `code == 0` + 解析出
+`publish.id`；CSDN 必须 HTTP 200 且 `code == 200`；掘金是「建草稿 → 发布」两步且两步都要
+明确成功信号。空 JSON、403 HTML 拦截页一律判 `failed`，绝不误报 `published`。
+这些判定都在 `src/publish.py` 里，并有离线单测覆盖，不靠猜。
 
 ## 许可证
 
