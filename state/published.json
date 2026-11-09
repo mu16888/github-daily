@@ -1,10 +1,16 @@
 {
   "version": 1,
-  "seen": {},
+  "seen": {
+    "jianchang512/pyvideotrans": {
+      "first_date": "2026-11-09",
+      "platforms": {}
+    }
+  },
   "schedule": {
     "last_dispatched": "2026-11-09",
-    "last_mode": "dry_run",
+    "last_mode": "live",
     "history": [
+      "2026-11-09",
       "2026-11-09",
       "2026-11-09"
     ]

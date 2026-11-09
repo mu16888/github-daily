@@ -108,7 +108,7 @@ We provide a pre-packaged `.exe` version for Windows 10/11 users, requiring no P
 | 话题标签 | speech-to-text、stt、subtitle-translation、text-to-speech、tts、video-transition |
 | 创建时间 | 2023-10-02 |
 | 最近更新 | 2026-11-09 |
-| 数据采集时间 | 2026-11-09T12:00:42+00:00 |
+| 数据采集时间 | 2026-11-09T12:20:01+00:00 |
 
 ## 八、需要注意
 
