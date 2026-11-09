@@ -61,13 +61,23 @@ schedule:
 publish:
   # 总开关。为 false 时只出稿、不调用任何发布接口。
   enabled: true
-  # 2026-11-09 起改为 false：凭据探活演练已通过，允许每日自动发文。
-  # 要暂停对外发布，改回 true 即可（无需改代码或删 Secrets）。
-  dry_run: false
+  # 2026-11-09 首次真发失败后暂停：掘金 Cookie 需重抓、CSDN 签名需复测、
+  # 知乎网页通道待接凭据。修完并演练通过、凭据补齐后再改回 false。
+  # 保持 true 时定时跑只出稿归档，绝不对外发文。
+  dry_run: true
   # 单平台失败不影响其他平台，也不影响出稿归档
   continue_on_error: true
 
 zhihu:
+  # 通道选择（A/B/C 三条路都保留，随时可切）：
+  #   off     = A：整条知乎跳过，适配器如实 skipped
+  #   openapi = C：官方 Publish OpenAPI，需 ZHIHU_APP_KEY/APP_SECRET（「发布者」内测资格）
+  #   web     = B：登录态网页会话，需 ZHIHU_COOKIE（不需要内测）
+  #   auto    = 有官方凭据且已授权则走 C，否则有 ZHIHU_COOKIE 就走 B，都没有则 A 跳过
+  mode: auto
+  # B 通道是否尝试第三步「公开发布」。true=全自动（可能需要前端动态签名 x-zse-96，
+  # 失败会如实 failed 且草稿仍在）；false=只自动建草稿+写正文，返回 drafted 供人工点发布。
+  web_auto_publish: true
   # 知乎官方规范要求「用户确认预览后」才能发 confirmed:true。
   # 全自动模式下采用「仓库所有者一次性长期授权」：只有你显式把它改成 true 才会发。
   # 改成 true 即代表你已确认：默认发布参数 + 长期授权自动发布，不再逐篇人工预览。
