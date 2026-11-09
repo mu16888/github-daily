@@ -30,9 +30,11 @@ GitHub Actions (公开仓库 / ubuntu-latest / 免费)
 [5] archive     drafts/YYYY-MM-DD/{owner__repo}.md / .html
    ▼
 [6] publish     先过每日配额闸门（每平台 1 篇），再走三个独立适配器：
-                知乎  官方 OpenAPI（HMAC 签名，confirmed:true）
+                知乎  按 zhihu.mode 路由：off 跳过 / openapi 官方内测接口 /
+                      web 登录态网页会话（建草稿 → 写正文 → 尝试公开）/ auto 自动择优
                 掘金  建草稿 → 发布（Cookie，两步）
                 CSDN  saveArticle（Cookie + x-ca 签名）
+                所有 Cookie 先规范化（去标签名/换行），所有 Result 统一脱敏
                 各平台用各自的 SEO 标题 / 摘要 / 标签
    ▼
 [7] ledger      state/published.json 去重台账（只记真正发布成功的）
@@ -53,7 +55,7 @@ GitHub Actions (公开仓库 / ubuntu-latest / 免费)
 | `src/discover.py` | 候选搜索、README 抓取、事实抽取、可解释打分 |
 | `src/compose.py` | 中文文章模板 + 自带 Markdown→HTML（少一个依赖） |
 | `src/seo.py` | 按平台生成标题 / 摘要 / 标签 / FAQ，钩子只认真实信号 |
-| `src/publish.py` | 三个发布适配器 + 统一结果模型 + 成功判定 |
+| `src/publish.py` | 三平台适配器 + 知乎 A/B/C 通道路由 + Cookie 规范化 + 统一脱敏 + 严格成功判定 |
 | `src/schedule.py` | 仿人工发布时间：每日目标时刻、到点闸门、三平台错峰、派发台账 |
 | `src/main.py` | 编排、每日配额闸门、去重台账、运行摘要、退出码 |
 | `config/settings.yaml` | 打分权重、每日篇数、配额、发布窗口、平台开关、长期授权开关 |
@@ -62,7 +64,7 @@ GitHub Actions (公开仓库 / ubuntu-latest / 免费)
 | `state/published.json` | 跨天去重台账 |
 | `drafts/` | 每日成稿归档（Markdown + HTML） |
 | `tests/test_pipeline.py` | 离线单测（unittest 原生，CI 真的会执行） |
-| `SECRETS.md` | 5 组 Secrets 的获取步骤与轮换提醒 |
+| `SECRETS.md` | 6 组 Secrets、知乎 A/B/C 三通道、轮换与泄露处置 |
 
 依赖只有 `requests` + `PyYAML`，无浏览器、无数据库、无模型服务。
 
@@ -77,7 +79,7 @@ GitHub Actions (公开仓库 / ubuntu-latest / 免费)
 | 公开仓库 scheduled workflow 60 天无活动会被自动禁用 | 每天把草稿 commit 回仓库，天然保活 |
 | `GITHUB_TOKEN` 1,000 次/小时/仓库；搜索接口另有更严的独立限额 | 每天只搜 3 次、每次 ≤8 条，命中 403/429 按 `retry-after` 退避 |
 | cron 按 UTC、只能写固定时刻，整点高负载还会排队延迟 | 每 15 分钟唤醒 + 代码层到点闸门；唤醒刻度用 08/23/38/53 分避开整点排队；实际发布时刻由 §5.2 决定 |
-| 知乎官方规范要求 `confirmed:true` 且「用户确认预览后」才发 | 设计成 `standing_consent` 一次性长期授权开关，默认 false；`confirm_note` 如实写明授权方式，不冒充逐篇预览 |
+| 知乎官方规范要求 `confirmed:true` 且「用户确认预览后」才发（仅 C 通道） | 设计成 `standing_consent` 一次性长期授权开关，默认 false；`confirm_note` 如实写明授权方式，不冒充逐篇预览。B 通道走网页登录态，由本人填 `ZHIHU_COOKIE` 授权 |
 | 知乎正文必须 HTML、每日上限 50 次、HTTP 200 不等于成功（`status==0` 才算） | 自带 HTML 转换；每天只发 1 篇；严格判定 JSON |
 | 掘金/CSDN 是登录态内部接口，从境外 CI IP 发出有风控风险 | 失败不影响归档；凭据可随时从 Secrets 撤销；文档如实写明风险，不承诺「稳定」 |
 
@@ -120,17 +122,35 @@ CSDN 那个"付费提高发文额度"是平台商业策略，与本项目无关�
 
 | 平台 | 性质 | 鉴权 | 正文 | 成功判定 |
 | --- | --- | --- | --- | --- |
-| 知乎 | **官方 OpenAPI**（[ZhihuSync](https://github.com/zhihu/ZhihuSync)） | `X-App-Key` + HMAC-SHA256 签名 | `content.html` = HTML | JSON `status == 0` |
-| 掘金 | 社区抓包内部接口（[适配器实测 2026-05-11](https://github.com/PsChina/web-publish/blob/main/adapters/juejin.yaml)） | Cookie `sessionid` + 用户级 `uuid` | `mark_content` = Markdown，`edit_type:10` | 建草稿拿 `draft_id` → publish 两步 |
-| CSDN | 社区实测内部接口，**官方从未发布公开 REST API** | Cookie + `x-ca-*` 阿里云网关签名 | `content` = HTML，`markdowncontent` = Markdown | JSON `code == 200` |
+| 知乎 C | **官方 OpenAPI**（[ZhihuSync](https://github.com/zhihu/ZhihuSync)） | `X-App-Key` + HMAC-SHA256 签名 | `content.html` = HTML | HTTP 200 且 JSON `status == 0` |
+| 知乎 B | **登录态网页会话**（[抓包契约](https://github.com/bifrost-proxy/bifrost/blob/main/.agents/skills/zhihu-publish/references/traffic-contract.md)） | Cookie 含 `z_c0` + `_xsrf` → `x-xsrftoken` | 草稿 PATCH 的 `content` = HTML | 建草稿 → 写正文 → `POST /api/v4/content/publish`，必须 HTTP 200 + `code==0` + 解析出 `publish.id` |
+| 掘金 | 社区抓包内部接口（[适配器实测 2026-05-11](https://github.com/PsChina/web-publish/blob/main/adapters/juejin.yaml)） | Cookie `sessionid` + 用户级 `uuid` | `mark_content` = Markdown，`edit_type:10` | 建草稿拿 `draft_id` → publish 两步，均需明确成功信号 |
+| CSDN | 社区实测内部接口，**官方从未发布公开 REST API** | Cookie + `x-ca-*` 阿里云网关签名 | `content` = HTML，`markdowncontent` = Markdown | HTTP 200 且 JSON `code == 200` |
 
-> 后两者的端点、字段有多来源一致的公开依据，但**尚未用你的账号实测**。
-> 因此 `config/platforms.yaml` 里保留了来源与 `note`，并且默认 `dry_run=true`。
-> 首次接入请先用 `--dry-run` 观察请求组装，再单独发一篇验证响应结构。
+> 除知乎官方 OpenAPI 外，端点与字段都来自公开社区资料，**多来源对细节存在分歧**，
+> 且尚未用你的账号跑通。因此 `config/platforms.yaml` 保留来源与 `note`，
+> 成功判定一律收紧（空响应 / WAF 拦截页 / HTTP 非 200 都不算 published）。
+> 知乎 B 的第三步「公开发布」可能需要前端动态签名 `x-zse-96`，纯 Cookie 无法保证成功；
+> 失败时如实 `failed` 并保留草稿，`web_auto_publish: false` 可退回「只自动建草稿」（状态 `drafted`）。
 
 **凭据现状**：本机重装后 `~/.zhihu/` 不存在，E 盘无掘金/CSDN 的 Cookie 或历史发布脚本残留，
-全局 npm 包里也没有发布工具。所以「以前推得动、现在不行」的根因是凭据随重装丢失，
-不是接口关闭——把凭据搬到 GitHub Secrets 正是这套方案要解决的问题。
+全局 npm 包里也没有发布工具。「以前推得动、现在不行」的根因是凭据随重装丢失，
+不是接口关闭。GitHub Secrets 里已有 `JUEJIN_COOKIE` / `JUEJIN_UUID` / `CSDN_COOKIE` 三项，
+知乎三项（C 的 APP_KEY/APP_SECRET、B 的 ZHIHU_COOKIE）待补。
+
+### 4.1 首次真发复盘（2026-11-09，如实记录）
+
+run `42616075753`，CI 结论 `success` 只代表流水线没崩，**发布层 `published=0 / failed=2`**：
+
+| 平台 | 根因 | 修复 |
+| --- | --- | --- |
+| 掘金 | Secret 值把 `cookie\n` 标签名连换行一起复制进去，requests 抛 `InvalidHeader` | `clean_cookie()` 去标签名 / 换行 / 多余空格；清洗后为空判 `skipped` |
+| CSDN | `401 HMAC signature does not match`：签名串第二行误写成 `/`，Content-Type 也与请求头不一致 | 签名串第二行改为 Accept 的实际值，Accept / Content-Type 由同一配置生成并逐字一致 |
+
+另有一处**安全事件**：`InvalidHeader` 的异常消息把完整掘金登录态 Cookie 原样带出，
+写进公开仓库的 `run-summary.json`。当前文件已覆盖脱敏，但 git 历史里仍有明文，
+最可靠的处置是账号本人退出掘金重新登录作废旧 Cookie（详见 `SECRETS.md`）。
+代码侧已在 `Result.__post_init__` 对 `detail`/`url` 统一脱敏，`main.py` 的 FATAL 分支同样走脱敏。
 
 ---
 
@@ -138,7 +158,9 @@ CSDN 那个"付费提高发文额度"是平台商业策略，与本项目无关�
 
 - 去重键 = `owner/repo`，台账保留 120 天窗口；窗口外的项目允许重新入选。
 - **演练（dry_run）不写台账**，可以反复调试而不消耗候选；正式运行出稿即写「已推荐」，保证一个项目只推荐一次。
-- 只有 `status == published` 才写平台发布记录与 URL；`skipped` / `failed` 不写。发布失败不会自动重发同一篇（避免重复刷屏），需要补发就删掉台账里那一条。
+- 只有 `published`（真发出去了）与 `drafted`（知乎草稿模式，已建草稿）才写平台记录；
+  `skipped` / `failed` 不写。`drafted` 也占当天名额，避免每天重复堆草稿。
+  发布失败不会自动重发同一篇（避免重复刷屏），需要补发就删掉台账里那一条。
 - 没有达标的新项目时**不发文、不凑数**，只记录 `picked: 0`。
 - 每天每平台 1 篇，由 `quota.per_day` 硬闸门保证；这是三平台限额的交集，不是随意取的值。
 - 每天最多派发一次，由 `schedule.last_dispatched` + 时间闸门保证（详见 §5.2）；手动触发要勾 `force` 才能绕过闸门。
@@ -202,18 +224,25 @@ cron 只能写固定时刻，写不出「每天随机」，所以改成**高频�
 3. ✅ 手动 `workflow_dispatch`（`dry_run=true` + `force=true`）演练跑通：
    run `42601483641`，12 个步骤全 success，闸门输出 `should_run=true`，49 单测通过，
    入选 1 个项目并归档，`published=0 / failed=0`。
-4. 按 `SECRETS.md` 填 5 组 Secrets（**当前为空**）。
-5. 先把 `publish.enabled` 改 `true`、保持 `dry_run=true` 再跑一次（确认三平台状态），
-   再把 `dry_run` 改 `false`，并按知乎官方要求把 `zhihu.standing_consent` 改 `true`（这一步即你的一次性授权）。
-6. 手动触发一次真发（勾 `force` 绕过时间闸门），核验三个平台各出现 1 篇，再交给每日 cron。
-   以后再改 `.github/workflows/daily.yml` 仍需本人在 GitHub 网页**整份覆盖提交**，
+4. ✅ 已填 3 组 Secrets（掘金 2 + CSDN 1），`publish.enabled=true` 的凭据探活演练跑通
+   （run `42613425797`：掘金 / CSDN `dry_run`、知乎 `skipped`）。
+5. ⚠️ 2026-11-09 首次真发失败（详见 §4.1），已把 `publish.dry_run` 改回 `true` **暂停对外发文**，
+   并修好 Cookie 规范化、CSDN 签名、统一脱敏三处，单测 55 → 77 全绿。
+6. **待做**：① 账号本人退出掘金重新登录并更新 `JUEJIN_COOKIE`；② 补 `ZHIHU_COOKIE`（B 通道）
+   或申请内测拿 `ZHIHU_APP_KEY`/`ZHIHU_APP_SECRET`（C 通道），或维持 A 跳过；
+   ③ 在 GitHub 网页**整份覆盖** `.github/workflows/daily.yml`，注入 `ZHIHU_COOKIE` 环境变量；
+   ④ 再跑一次 `dry_run` 演练确认三平台状态；⑤ 把 `dry_run` 改回 `false`，手动 `force` 真发并人工核稿。
+7. 以后每次改 `.github/workflows/daily.yml` 都仍需本人在 GitHub 网页整份覆盖提交，
    否则云端还是旧版本（推不上去，也不会报错提醒）。
 
 ---
 
 ## 7. 已知风险（不隐藏）
 
-- **账号风控**：掘金/CSDN 靠登录 Cookie，从 GitHub 境外机房 IP 发文属于异常设备指纹，
+- **知乎 B 通道未经实测**：公开抓包契约显示公开发布可能需要 `x-zse-96` 动态签名，
+  纯 Cookie 不保证成功；失败时草稿仍在，可改 `web_auto_publish: false` 只自动建草稿人工发。
+  该通道同样是登录态发文，风控代价与掘金 / CSDN 同级。
+- **账号风控**：掘金/CSDN（以及知乎 B）靠登录 Cookie，从 GitHub 境外机房 IP 发文属于异常设备指纹，
   有触发风控的可能。这是「云端全发」相对「本机发」的主要代价；缓解手段只有低频（每天 1 篇）、
   失败即停、以及凭据可随时撤销。若出现验证短信/异常登录提示，把对应平台 `enabled` 改 false 即可。
 - **Cookie 会过期**（掘金约 30 天、CSDN 依登录态），需按 `SECRETS.md` 定期更新 Secrets。
