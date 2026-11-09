@@ -2,9 +2,12 @@
 
 设计要点：
 1. 凭据缺失 -> status=skipped（不是 failed，也不是 published），绝不误报成功。
-2. HTTP 200 不等于发布成功：知乎看 JSON status==0，CSDN 看 code==200，掘金看两层响应。
+2. HTTP 200 不等于发布成功：知乎看 JSON status/code，CSDN 看 code==200，掘金看两层响应。
 3. dry_run 只组装请求体与检查凭据是否齐备，不向任何发布端点发请求。
-4. Secret 与签名值不写日志、不写文件。
+4. Secret 与签名值不写日志、不写文件。所有 Result.detail 在构造时统一脱敏，
+   因为 requests 的 InvalidHeader 会把整个 Cookie 请求头原样塞进异常消息。
+5. Cookie 从 DevTools 复制时经常带 `cookie:` 标签、换行、多余空格；
+   统一经 clean_cookie() 规范化，避免把标签名当请求头值发出去。
 """
 from __future__ import annotations
 
@@ -13,22 +16,119 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import time
 import uuid
 from dataclasses import asdict, dataclass
 from typing import Any
+from urllib.parse import urlsplit
 
 import requests
 
+
+# --------------------------------------------------------------------------- #
+# 凭据清洗与脱敏
+# --------------------------------------------------------------------------- #
+
+# 只匹配「标签名」：cookie: / cookie：/ cookie\n / cookie（单独一个词）。
+# 不能误伤以 cookie_ 开头的真实字段名（如 cookie_consent）。
+_COOKIE_LABEL_RE = re.compile(r"^\s*cookie(?:\s*[:：]\s*|\s+|\s*$)", re.IGNORECASE)
+
+_SENSITIVE_FIELDS = (
+    "sessionid", "sessionid_ss", "sid_guard", "sid_tt", "sid_ucp_v1", "ssid_ucp_v1",
+    "passport_csrf_token", "passport_csrf_token_default", "passport_auth_status",
+    "z_c0", "_xsrf", "x-xsrftoken", "userinfo", "usertoken", "username",
+    "dc_session_id", "csrftoken", "__ac_signature", "s_v_web_id",
+    "authorization", "x-ca-signature", "app_secret", "set-cookie", "cookie",
+)
+_SENSITIVE_FIELD_RE = re.compile(
+    r"(?i)(?<![A-Za-z0-9_-])(" + "|".join(re.escape(f) for f in _SENSITIVE_FIELDS) +
+    r")\s*=\s*([^;\s,'\"\\)]{1,4000})"
+)
+_PARAM_LABEL_RE = re.compile(r"(?i)^(?:uuid|aid)\s*=\s*")
+
+
+def clean_cookie(raw: str) -> str:
+    """把从 DevTools 复制的 Cookie 规范化成纯 `name=value; name=value` 请求头值。
+
+    处理三类常见脏数据：`cookie: ` 前缀、`cookie\\n` 前缀（标签+换行）、
+    记事本自动换行 / 制表符 / 多余空格。不校验字段内容，避免因测试用的
+    短占位值被判为「缺失」；标签名单独一个词会被清成空串，由 missing() 判缺失。
+    """
+    s = _COOKIE_LABEL_RE.sub("", raw or "", count=1)
+    s = s.replace("\r", " ").replace("\n", " ").replace("\t", " ")
+    s = re.sub(r"\s*;\s*", "; ", s)
+    s = re.sub(r"\s{2,}", " ", s).strip()
+    return s.strip("; ").strip()
+
+
+def clean_param(raw: str) -> str:
+    """清洗从 URL 里复制的 uuid / aid：去掉 `uuid=` 前缀、`&spider=0` 尾巴与引号。"""
+    s = str(raw or "").strip().strip("'\"")
+    s = _PARAM_LABEL_RE.sub("", s)
+    return re.split(r"[&\s?#]", s, maxsplit=1)[0].strip()
+
+
+def cookie_value(cookie: str, name: str) -> str:
+    for part in (cookie or "").split(";"):
+        k, _, v = part.strip().partition("=")
+        if k.strip() == name:
+            return v.strip()
+    return ""
+
+
+def redact(text: str, limit: int = 300) -> str:
+    """脱敏任何可能进日志 / 公开仓库文件的文本。
+
+    两段：整串 Cookie（很多分号或等号）直接整体丢弃，不做字段级替换，
+    避免漏掉没列进名单的新字段；短消息按敏感字段名逐个打码。
+    """
+    s = str(text or "").replace("\r", " ").replace("\n", " ")
+    if s.count(";") >= 3 or s.count("=") >= 8:
+        return "[redacted] 原始消息疑似含完整请求头或 Cookie，已整体脱敏（不写入公开文件）"
+    s = _SENSITIVE_FIELD_RE.sub(lambda m: f"{m.group(1)}=***", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s[:limit]
+
+
+def safe_url(u: str) -> str:
+    """只保留 scheme://host/path，丢掉可能带 token 的 query 与非 http(s) 值。"""
+    raw = str(u or "").strip().splitlines()[0] if str(u or "").strip() else ""
+    try:
+        p = urlsplit(raw)
+    except ValueError:
+        return ""
+    if p.scheme not in ("http", "https") or not p.netloc:
+        return ""
+    return f"{p.scheme}://{p.netloc}{p.path}"[:300]
+
+
+def csdn_sign_string(method: str, accept: str, content_type: str,
+                     key: str, nonce: str, path: str) -> str:
+    """阿里云 API 网关 StringToSign。
+
+    规范：Method + Accept + Content-MD5 + Content-Type + Date + Headers + Path。
+    Headers 段每行以 \\n 结尾，所以 Path 直接接在 `x-ca-nonce:xxx\\n` 后面。
+    第二行必须是 Accept 的值（旧代码误写成 `/`），第四行必须与实际请求头逐字一致。
+    """
+    return (f"{method}\n{accept}\n\n{content_type}\n\n"
+            f"x-ca-key:{key}\n"
+            f"x-ca-nonce:{nonce}\n"
+            f"{path}")
 
 
 @dataclass
 class Result:
     platform: str
-    status: str          # published | skipped | dry_run | failed
+    status: str          # published | drafted | skipped | dry_run | failed
     url: str = ""
     detail: str = ""
     http_status: int | None = None
+
+    def __post_init__(self):
+        # 唯一出口：打印、写 state、写 run-summary 都拿到的是脱敏后的值。
+        self.detail = redact(self.detail)
+        self.url = safe_url(self.url)
 
     def as_dict(self) -> dict:
         return asdict(self)
@@ -48,6 +148,10 @@ def _json(resp: requests.Response) -> dict:
         return {}
 
 
+# --------------------------------------------------------------------------- #
+# 基类
+# --------------------------------------------------------------------------- #
+
 class BasePublisher:
     name = "base"
 
@@ -61,8 +165,22 @@ class BasePublisher:
     def required(self) -> list[str]:
         return list(self.cfg.get("secrets", []))
 
+    def cookie(self, key: str) -> str:
+        return clean_cookie(self.secrets.get(key, "") or "")
+
     def missing(self) -> list[str]:
-        return [k for k in self.required() if not (self.secrets.get(k) or "").strip()]
+        out = []
+        for k in self.required():
+            raw = self.secrets.get(k, "") or ""
+            if k.endswith("_COOKIE"):
+                v: Any = clean_cookie(str(raw))
+            elif k.endswith("_UUID"):
+                v = clean_param(str(raw))
+            else:
+                v = str(raw).strip()
+            if not str(v).strip():
+                out.append(k)
+        return out
 
     # 每个平台用各自的 SEO 标题 / 摘要 / 标签；旧字段作为兼容回退
     def title(self, article: dict) -> str:
@@ -99,7 +217,11 @@ class BasePublisher:
             return Result(self.name, "failed", detail=f"{type(e).__name__}: {e}")
 
 
-class ZhihuPublisher(BasePublisher):
+# --------------------------------------------------------------------------- #
+# 知乎 C：官方 Publish OpenAPI（需「发布者」内测凭据）
+# --------------------------------------------------------------------------- #
+
+class _ZhihuOpenApi(BasePublisher):
     name = "zhihu"
 
     def __init__(self, *a, **kw):
@@ -116,8 +238,8 @@ class ZhihuPublisher(BasePublisher):
 
     def build(self, article: dict) -> tuple[str, dict, dict]:
         c = self.cfg
-        key = self.secrets["ZHIHU_APP_KEY"].strip()
-        secret = self.secrets["ZHIHU_APP_SECRET"].strip()
+        key = (self.secrets.get("ZHIHU_APP_KEY") or "").strip()
+        secret = (self.secrets.get("ZHIHU_APP_SECRET") or "").strip()
         self.ts = str(int(time.time()))
         self.logid = f"github-daily-{uuid.uuid4().hex[:12]}"
         extra = ""
@@ -154,11 +276,207 @@ class ZhihuPublisher(BasePublisher):
         data = _json(resp)
         status = data.get("status")
         msg = str(data.get("msg") or "")
-        if isinstance(status, (int, float)) and status == 0:
+        if resp.status_code == 200 and isinstance(status, (int, float)) and status == 0:
             d = data.get("data") or {}
-            return True, str(d.get("url") or ""), msg or "status=0"
-        return False, "", f"status={status!r} msg={msg or '(empty)'}"
+            return True, str(d.get("url") or "") if isinstance(d, dict) else "", msg or "status=0"
+        return False, "", f"http={resp.status_code} status={status!r} msg={msg or '(empty)'}"
 
+
+# --------------------------------------------------------------------------- #
+# 知乎 B：登录态网页会话（建草稿 -> 写正文 -> 尝试公开）
+# 抓包契约：https://github.com/bifrost-proxy/bifrost/blob/main/.agents/skills/
+#           zhihu-publish/references/traffic-contract.md
+# 该通道不需要内测资格，但第三步可能需要前端动态签名 x-zse-96，
+# 纯 Cookie 无法保证成功；失败时如实 failed，草稿仍在，可人工补发。
+# --------------------------------------------------------------------------- #
+
+class _ZhihuWeb(BasePublisher):
+    name = "zhihu"
+
+    def required(self) -> list[str]:
+        return ["ZHIHU_COOKIE"]
+
+    def _headers(self, cookie: str, publish: bool = False) -> dict:
+        w = self.cfg["web"]
+        h = {
+            "Content-Type": "application/json",
+            "Cookie": cookie,
+            "User-Agent": w.get("user_agent", "Mozilla/5.0"),
+            "Origin": w.get("publish_origin", w["origin"]) if publish else w["origin"],
+            "Referer": w.get("publish_referer", w["referer"]) if publish else w["referer"],
+            "x-requested-with": "fetch",
+            "Accept": "application/json, text/plain, */*",
+        }
+        xsrf = cookie_value(cookie, "_xsrf")
+        if xsrf:
+            h["x-xsrftoken"] = xsrf
+        return h
+
+    def build(self, article: dict) -> tuple[str, dict, dict]:
+        w = self.cfg["web"]
+        url = f"{w['base_url']}{w['draft_create_path']}"
+        body = {"title": self.title(article), "delta_time": 0, "can_reward": False}
+        return url, self._headers(self.cookie("ZHIHU_COOKIE")), body
+
+    def judge(self, resp: requests.Response) -> tuple[bool, str, str]:
+        d = _json(resp)
+        return (resp.status_code == 200 and d.get("code") in (0, "0"), "",
+                f"http={resp.status_code} code={d.get('code')!r}")
+
+    @staticmethod
+    def _draft_id(d: dict) -> str:
+        for k in ("id", "draft_id", "article_id"):
+            v = d.get(k)
+            if isinstance(v, (str, int)) and v:
+                return str(v)
+        for k in ("data", "draft", "article"):
+            sub = d.get(k)
+            if isinstance(sub, dict):
+                got = _ZhihuWeb._draft_id(sub)
+                if got:
+                    return got
+        return ""
+
+    @staticmethod
+    def _published_id(d: dict) -> str:
+        data = d.get("data")
+        obj: dict = {}
+        if isinstance(data, dict):
+            raw = data.get("result")
+            if isinstance(raw, str):
+                try:
+                    parsed = json.loads(raw)
+                    obj = parsed if isinstance(parsed, dict) else {}
+                except Exception:
+                    obj = {}
+            elif isinstance(raw, dict):
+                obj = raw
+            elif isinstance(data.get("publish"), dict):
+                obj = data
+        pub = obj.get("publish") if isinstance(obj, dict) else None
+        if isinstance(pub, dict) and pub.get("id"):
+            return str(pub["id"])
+        if isinstance(data, dict) and data.get("id"):
+            return str(data["id"])
+        return ""
+
+    def publish(self, article: dict) -> Result:
+        miss = self.missing()
+        if miss:
+            return Result(self.name, "skipped", detail=f"缺少 Secrets: {', '.join(miss)}")
+        if self.dry_run:
+            url, _h, _b = self.build(article)
+            return Result(self.name, "dry_run",
+                          detail=f"已组装知乎网页通道建草稿请求（{url}，正文 {len(article['html'])} 字符），未发送")
+
+        w = self.cfg["web"]
+        cookie = self.cookie("ZHIHU_COOKIE")
+        headers = self._headers(cookie)
+        title = self.title(article)
+        html = article["html"]
+        try:
+            r1 = self.session.post(
+                f"{w['base_url']}{w['draft_create_path']}", headers=headers,
+                json={"title": title, "delta_time": 0, "can_reward": False}, timeout=30)
+            d1 = _json(r1)
+            did = self._draft_id(d1)
+            if r1.status_code != 200 or not did:
+                return Result(self.name, "failed", http_status=r1.status_code,
+                              detail=f"建草稿失败 http={r1.status_code} code={d1.get('code')!r} "
+                                     f"msg={str(d1.get('msg') or d1.get('message') or '')[:100]}")
+            draft_url = str(d1.get("url") or w.get("drafts_url", ""))
+            r2 = self.session.patch(
+                f"{w['base_url']}{w['draft_update_path'].format(id=did)}", headers=headers,
+                json={"title": title, "content": html, "table_of_contents": False,
+                      "delta_time": 0, "can_reward": False}, timeout=30)
+            if r2.status_code not in (200, 201, 204):
+                return Result(self.name, "failed", http_status=r2.status_code, url=draft_url,
+                              detail=f"写正文失败 http={r2.status_code}；草稿 id={did} 已生成，可到创作中心手动发布")
+
+            if not bool(self.settings.get("zhihu", {}).get("web_auto_publish", False)):
+                return Result(self.name, "drafted", url=draft_url, http_status=r2.status_code,
+                              detail=f"网页通道已建草稿并写入正文（id={did}）；web_auto_publish=false，未公开发布")
+
+            text_len = len(re.sub(r"<[^>]+>", "", html))
+            pub_body = {
+                "action": "article",
+                "data": {
+                    "draft": {"id": did},
+                    "title": {"title": title},
+                    "hybrid": {"html": html, "textLength": text_len},
+                    "extra_info": {"pc_business_params": json.dumps(
+                        {"title": title, "content": html}, ensure_ascii=False)},
+                },
+            }
+            r3 = self.session.post(
+                f"{w['publish_base']}{w['publish_path']}",
+                headers=self._headers(cookie, publish=True), json=pub_body, timeout=30)
+            d3 = _json(r3)
+            pid = self._published_id(d3)
+            ok = r3.status_code == 200 and d3.get("code") in (0, "0") and bool(pid)
+            link = f"https://zhuanlan.zhihu.com/p/{pid}" if pid else draft_url
+            return Result(self.name, "published" if ok else "failed", url=link,
+                          http_status=r3.status_code,
+                          detail=f"draft_id={did} | publish http={r3.status_code} "
+                                 f"code={d3.get('code')!r} article_id={pid or '(none)'} "
+                                 f"msg={str(d3.get('msg') or d3.get('message') or '')[:100]}"
+                                 + ("" if ok else " | 草稿仍在，可到创作中心手动发布；"
+                                    "公开发布可能需要前端动态签名 x-zse-96"))
+        except Exception as e:
+            return Result(self.name, "failed", detail=f"{type(e).__name__}: {e}")
+
+
+class ZhihuPublisher(BasePublisher):
+    """知乎通道路由：A=off / C=openapi / B=web / auto=有官方凭据优先、否则网页。
+
+    name 固定为 zhihu，保证配额、错峰、平台化标题都按同一平台处理。
+    """
+    name = "zhihu"
+
+    def _impl(self) -> BasePublisher | None:
+        z = self.settings.get("zhihu", {})
+        mode = str(z.get("mode", "auto") or "auto").lower()
+        if mode not in ("off", "openapi", "web", "auto"):
+            mode = "auto"
+        if mode == "off":
+            return None
+        has_api = bool((self.secrets.get("ZHIHU_APP_KEY") or "").strip()
+                       and (self.secrets.get("ZHIHU_APP_SECRET") or "").strip())
+        has_web = bool(clean_cookie(self.secrets.get("ZHIHU_COOKIE") or ""))
+        if mode == "openapi":
+            return _ZhihuOpenApi(self.cfg, self.settings, self.secrets, self.dry_run) if has_api else None
+        if mode == "web":
+            return _ZhihuWeb(self.cfg, self.settings, self.secrets, self.dry_run) if has_web else None
+        if has_api and z.get("standing_consent", False):
+            return _ZhihuOpenApi(self.cfg, self.settings, self.secrets, self.dry_run)
+        if has_web:
+            return _ZhihuWeb(self.cfg, self.settings, self.secrets, self.dry_run)
+        if has_api:
+            # 有官方凭据但没授权：交给 OpenAPI 实现返回如实 skipped，不静默改走网页。
+            return _ZhihuOpenApi(self.cfg, self.settings, self.secrets, self.dry_run)
+        return None
+
+    def _impl_or_default(self) -> BasePublisher:
+        return self._impl() or _ZhihuOpenApi(self.cfg, self.settings, self.secrets, self.dry_run)
+
+    def build(self, article: dict) -> tuple[str, dict, dict]:
+        return self._impl_or_default().build(article)
+
+    def judge(self, resp: requests.Response) -> tuple[bool, str, str]:
+        return self._impl_or_default().judge(resp)
+
+    def publish(self, article: dict) -> Result:
+        impl = self._impl()
+        if impl is None:
+            return Result(self.name, "skipped",
+                          detail="知乎无可用通道：缺 ZHIHU_APP_KEY/APP_SECRET（官方 OpenAPI）"
+                                 "与 ZHIHU_COOKIE（网页会话），或 zhihu.mode=off；按约定跳过，不假报成功")
+        return impl.publish(article)
+
+
+# --------------------------------------------------------------------------- #
+# 掘金
+# --------------------------------------------------------------------------- #
 
 class JuejinPublisher(BasePublisher):
     name = "juejin"
@@ -166,8 +484,8 @@ class JuejinPublisher(BasePublisher):
     def build(self, article: dict) -> tuple[str, dict, dict]:
         c = self.cfg
         q = c["query"]
-        cookie = self.secrets["JUEJIN_COOKIE"].strip()
-        uid = self.secrets["JUEJIN_UUID"].strip()
+        cookie = self.cookie("JUEJIN_COOKIE")
+        uid = clean_param(self.secrets.get("JUEJIN_UUID", "") or "")
         base = c["api_base"]
         url = f"{base}{c['endpoints']['draft_create']}?aid={q['aid']}&uuid={uid}&spider={q['spider']}"
         j = self.settings["juejin"]
@@ -211,7 +529,7 @@ class JuejinPublisher(BasePublisher):
                               detail=f"建草稿未返回 draft_id，code={d1.get('err_no') or d1.get('code')} msg={d1.get('err_msg') or d1.get('msg')}")
             c = self.cfg
             q = c["query"]
-            uid = self.secrets["JUEJIN_UUID"].strip()
+            uid = clean_param(self.secrets.get("JUEJIN_UUID", "") or "")
             pub_url = f"{c['api_base']}{c['endpoints']['publish']}?aid={q['aid']}&uuid={uid}&spider={q['spider']}"
             pub_body = {"draft_id": draft_id, "sync_to_org": False, "column_ids": [], "theme_ids": []}
             r2 = self.session.post(pub_url, headers=headers, json=pub_body, timeout=30)
@@ -239,6 +557,10 @@ class JuejinPublisher(BasePublisher):
             return Result(self.name, "failed", detail=f"{type(e).__name__}: {e}")
 
 
+# --------------------------------------------------------------------------- #
+# CSDN
+# --------------------------------------------------------------------------- #
+
 class CsdnPublisher(BasePublisher):
     name = "csdn"
 
@@ -246,24 +568,20 @@ class CsdnPublisher(BasePublisher):
         c = self.cfg
         path = c["path"]
         ct = c["content_type"]
+        accept = c.get("accept", "*/*")
         key = str(c["ca_key"])
         nonce = str(uuid.uuid4())
-        # 阿里云 API 网关签名串：空行与换行必须逐字一致
-        to_sign = (
-            f"POST\n/\n\n{ct}\n\n"
-            f"x-ca-key:{key}\n"
-            f"x-ca-nonce:{nonce}\n"
-            f"{path}"
-        ).encode()
+        # 签名串里的 Accept / Content-Type 必须与下面实际发出的请求头逐字一致。
+        to_sign = csdn_sign_string("POST", accept, ct, key, nonce, path).encode()
         sign = base64.b64encode(
             hmac.new(str(c["ca_sign_secret"]).encode(), to_sign, hashlib.sha256).digest()
         ).decode()
         headers = {
             "content-type": ct,
-            "accept": "*/*",
+            "accept": accept,
             "origin": c["origin"],
             "referer": c["referer"],
-            "cookie": self.secrets["CSDN_COOKIE"].strip(),
+            "cookie": self.cookie("CSDN_COOKIE"),
             "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
             "x-ca-key": key,
             "x-ca-nonce": nonce,
@@ -295,7 +613,8 @@ class CsdnPublisher(BasePublisher):
 
 def all_publishers(platforms_cfg: dict, settings: dict) -> list[BasePublisher]:
     secrets = {k: os.environ.get(k, "") for k in (
-        "ZHIHU_APP_KEY", "ZHIHU_APP_SECRET", "JUEJIN_COOKIE", "JUEJIN_UUID", "CSDN_COOKIE"
+        "ZHIHU_APP_KEY", "ZHIHU_APP_SECRET", "ZHIHU_COOKIE",
+        "JUEJIN_COOKIE", "JUEJIN_UUID", "CSDN_COOKIE",
     )}
     dry = bool(settings["publish"].get("dry_run", True))
     mapping = {"zhihu": ZhihuPublisher, "juejin": JuejinPublisher, "csdn": CsdnPublisher}
