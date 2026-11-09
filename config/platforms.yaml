@@ -1,7 +1,8 @@
 # 三平台发布通道配置
 #
-# 重要：只有 zhihu 是官方开放接口。juejin / csdn 是登录态内部接口，
-# 由社区抓包整理，官方从未发布公开文档，随时可能变更或失效。
+# 重要：知乎官方 OpenAPI 是唯一有官方文档的通道，但 APP_SECRET 需「发布者」内测资格。
+# 知乎 web 段与 juejin / csdn 都是登录态内部接口，由社区抓包整理，
+# 官方从未发布公开文档，随时可能变更或失效。
 # verified 字段表示「接口资料是否被原始来源证实」，不代表「已用你的账号实测」。
 # 用你的账号实测前，请保持 publish.dry_run=true。
 
@@ -19,6 +20,23 @@ platforms:
     daily_limit: 50
     success_rule: 'response JSON status == 0 (HTTP 200 不代表成功)'
     secrets: [ZHIHU_APP_KEY, ZHIHU_APP_SECRET]
+    # B 通道：登录态网页会话，不需要内测资格。
+    # 抓包契约来源：bifrost-proxy/bifrost / .agents/skills/zhihu-publish/references/traffic-contract.md
+    # 第三步「公开发布」可能需要前端动态签名 x-zse-96，纯 Cookie 无法保证成功，
+    # 代码对此严格判定：失败就 failed 且保留草稿，不假报 published。
+    web:
+      base_url: 'https://zhuanlan.zhihu.com'
+      draft_create_path: '/api/articles/drafts'
+      draft_update_path: '/api/articles/{id}/draft'
+      publish_base: 'https://www.zhihu.com'
+      publish_path: '/api/v4/content/publish'
+      origin: 'https://zhuanlan.zhihu.com'
+      referer: 'https://zhuanlan.zhihu.com/write'
+      publish_origin: 'https://www.zhihu.com'
+      publish_referer: 'https://zhuanlan.zhihu.com/write'
+      drafts_url: 'https://www.zhihu.com/creator/drafts'
+      user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36'
+      secrets: [ZHIHU_COOKIE]
 
   juejin:
     enabled: true
@@ -57,7 +75,12 @@ platforms:
     ca_key: '203803574'
     ca_sign_secret: '9znpamsyl2c7cdrr9sas0le9vbc3r6ba'
     ca_signature_headers: 'x-ca-key,x-ca-nonce'
-    content_type: 'application/json'   # 签名串里的 Content-Type 必须与实际请求头一致
+    # 签名串第二行是 Accept 的值（旧版误写成 `/`）、第四行是 Content-Type，
+    # 二者必须与实际请求头逐字一致，否则网关回 401 HMAC signature does not match。
+    # 公开社区资料对这两个值有两种写法（*/* 与 application/json, text/plain, */*），
+    # 未经本账号实测；如仍 401，只改这里即可切换，代码会自动同步签名串与请求头。
+    accept: '*/*'
+    content_type: 'application/json;charset=UTF-8'
     origin: 'https://editor.csdn.net'
     referer: 'https://editor.csdn.net/'
     body_format: both                  # content=HTML，markdowncontent=原始 Markdown
