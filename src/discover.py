@@ -47,6 +47,14 @@ QUICKSTART_RE = re.compile(
     r"快速开始|安装|上手|用法|使用)\b[^\n]*\n"
 )
 HEADING_RE = re.compile(r"(?m)^#{1,4}\s+\S")
+# 真正的「上手」章节。QUICKSTART_RE 里含 install，只配给打分用；抽正文时若直接拿它，
+# 排在前面的 ## Install 会把 ## Quick Start 的内容抢走，导致「上手」一节空掉。
+USAGE_RE = re.compile(
+    r"(?im)^#{1,4}\s*(?:[0-9.]*\s*)?"
+    r"(?:(?:quick\s*start|getting\s+started|usage|how\s+to\s+use)\b|"
+    r"(?:快速开始|快速上手|上手|用法|使用方法|使用说明))"
+    r"[^\n]*\n"
+)
 # 作者自己写的「为什么做 / 解决什么」与「功能」章节：痛点只能引用原文，不能代为编造
 PROBLEM_RE = re.compile(
     r"(?im)^#{1,4}\s*(?:[0-9.]*\s*)?"
@@ -265,7 +273,9 @@ def _section_after(readme: str, heading_re: re.Pattern, limit: int = 1200) -> st
 
 
 def extract_quickstart(readme: str, limit: int = 1200) -> str:
-    return _section_after(readme, QUICKSTART_RE, limit)
+    # 优先取真正的 Quick Start / Usage / 用法 章节；没有才退回含 Install 的宽匹配
+    section = _section_after(readme, USAGE_RE, limit)
+    return section or _section_after(readme, QUICKSTART_RE, limit)
 
 
 def extract_problem(readme: str, limit: int = 1200) -> str:
@@ -309,24 +319,24 @@ def score(repo: Repo, w: dict) -> tuple[int, list[str]]:
             total += int(w.get(key, 0))
             signals.append(note)
 
-    add("readme_present", bool(readme), "有 README")
-    add("readme_substantial", len(readme) >= 800, "README 内容充实（≥800 字符）")
-    add("quickstart_section", bool(QUICKSTART_RE.search(readme)), "README 里有 Quick Start / 安装 / 用法 章节")
-    add("one_command_install", bool(repo.install_blocks), "README 给出了可直接复制的安装命令")
-    add("has_license", repo.license not in ("", "NOASSERTION", "None"), f"有明确开源许可证（{repo.license}）")
-    add("no_compile_required", bool(readme) and not COMPILE_RE.search(readme), "README 中未检出需要自行编译源码的步骤")
-    add("low_dependency", bool(readme) and not HEAVY_DEP_RE.search(low), "README 中未检出数据库 / API key / 付费服务的强制要求")
-    add("sweet_spot_stars", 500 <= repo.stars <= 20000, f"star 数处于活跃区间（{repo.stars}）")
+    add("readme_present", bool(readme), "写了说明文档")
+    add("readme_substantial", len(readme) >= 800, "说明写得够长，不是三两句就完事")
+    add("quickstart_section", bool(QUICKSTART_RE.search(readme)), "写了 Quick Start（快速上手）和怎么装")
+    add("one_command_install", bool(repo.install_blocks), "有能直接复制的安装命令")
+    add("has_license", repo.license not in ("", "NOASSERTION", "None"), f"标了 {repo.license} 协议，用起来有规矩")
+    add("no_compile_required", bool(readme) and not COMPILE_RE.search(readme), "不用自己把源码做成软件")
+    add("low_dependency", bool(readme) and not HEAVY_DEP_RE.search(low), "不用另外配数据库、账号或者付费服务")
+    add("sweet_spot_stars", 500 <= repo.stars <= 20000, f"{repo.stars} 颗星，不算冷门")
 
     if readme and len(readme) < 400:
         total += int(w.get("penalty_tiny_readme", 0))
-        signals.append("README 过短，说明可能不足")
+        signals.append("说明太短，可能讲不清楚")
     if WIP_RE.search(readme):
         total += int(w.get("penalty_wip", 0))
-        signals.append("作者标注了 WIP / experimental，尚不稳定")
+        signals.append("作者自己标了 WIP / experimental，还在改")
     if HEAVY_DEP_RE.search(low):
         total += int(w.get("penalty_paid_or_key", 0))
-        signals.append("需要额外服务或密钥才能用")
+        signals.append("还得另外配服务或密钥才能跑")
 
     return total, signals
 
