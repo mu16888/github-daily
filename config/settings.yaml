@@ -1,0 +1,73 @@
+# github-daily 运行参数
+# 修改本文件即改变流水线行为，无需改代码。
+
+daily:
+  picks_per_day: 1          # 每天出几篇（每个平台各发 1 篇，避免刷屏触发风控）
+  candidate_pool: 24        # 搜索候选上限（控制 API 请求数）
+  min_score: 9              # 小白友好分门槛
+  since_days: 45            # 只看近 N 天创建/活跃的项目
+  stars_min: 150
+  stars_max: 20000
+  history_window_days: 120  # 去重台账保留窗口
+
+# GitHub Search API 查询模板；{since} / {recent} 替换成日期
+# 注意：GitHub 搜索不支持 >= / <=，必须写 > 和 {min}..{max} 范围。
+# 用错语法不会报错，只会静默忽略该条件（实测 >= 写法返回 1587 万条、star 上限完全失效）。
+queries:
+  - 'created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false'
+  - 'pushed:>{recent} stars:{stars_min}..{stars_max} archived:false fork:false language:Python'
+  - 'topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{since}'
+
+# 打分权重（只依据 README / API 中真实出现的信号，不做推测）
+score_weights:
+  readme_present: 2
+  readme_substantial: 2       # README >= 800 字符
+  quickstart_section: 3       # 含 Quick Start / 快速开始 / Getting Started / 安装
+  one_command_install: 4      # pip/npm/brew/docker/uvx/npx/cargo/go install
+  has_license: 1
+  has_releases: 2
+  no_compile_required: 2      # 安装步骤里没有 make/go build/cargo build
+  low_dependency: 1           # 没有「需要数据库 / API key / 付费服务」等字样
+  sweet_spot_stars: 1         # 500..20000 stars
+  penalty_tiny_readme: -3     # README < 400 字符
+  penalty_wip: -4             # WIP / experimental / not production ready
+  penalty_paid_or_key: -2     # 明确要求 API key 或付费套餐
+
+# 每平台每日发文配额（发布前的硬闸门，防止手动多次触发 workflow 重复发文）
+# 2026-11-09 核查依据见 DESIGN.md §3。取交集后每天只能 1 篇，别调高。
+quota:
+  per_day:
+    zhihu: 1      # 官方 OpenAPI 上限 50 次/天，但网页端实测为「距上一篇 ≥24h」的滚动限流
+    juejin: 1     # 社区实测 1 篇/天，且第 2 篇会返回 err_no:0 却不进文章列表（静默失效）
+    csdn: 1       # 官方 2025-11-03 公告下调每日上限；VIP 页 5/15 篇，免费用户社区实测约 1~2 篇
+  model: calendar_day   # calendar_day | rolling_24h
+
+publish:
+  # 总开关。为 false 时只出稿、不调用任何发布接口。
+  enabled: false
+  # 首次接入务必保持 true：只做凭据探活与请求组装，不真正发文。
+  dry_run: true
+  # 单平台失败不影响其他平台，也不影响出稿归档
+  continue_on_error: true
+
+zhihu:
+  # 知乎官方规范要求「用户确认预览后」才能发 confirmed:true。
+  # 全自动模式下采用「仓库所有者一次性长期授权」：只有你显式把它改成 true 才会发。
+  # 改成 true 即代表你已确认：默认发布参数 + 长期授权自动发布，不再逐篇人工预览。
+  standing_consent: false
+  # AI 参与生成的内容，官方规范建议声明 ai_creation；是否声明由你决定。
+  # 可选值：''（不发送）/ ai_creation / spoiler / fictional_creation / contain_finance / medical_advice
+  creation_statement: ''
+  comment_permission: all
+  table_of_contents_enabled: false
+
+juejin:
+  category_id: '6809637771511070734'   # 开发工具
+  tag_ids: ['7467857238494020000']     # AI编程
+  brief_max: 100
+  title_max: 80
+
+csdn:
+  tags: 'GitHub,开源,开发工具'
+  read_type: public
+  article_type: original

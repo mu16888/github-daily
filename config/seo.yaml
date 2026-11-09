@@ -1,0 +1,75 @@
+# 标题 / 摘要 / 标签的 SEO 配置
+#
+# 原则：所有钩子（hook）必须由 README 或 API 里真实检测到的信号触发。
+# 不写「神器 / 必看 / 全网最全 / 5 分钟搞定」这类无法证实的夸张词。
+# 搜索词的落点是：项目名 + 「怎么用 / 安装 / 教程 / 上手」这类真实长尾词。
+
+platforms:
+  zhihu:
+    title_max: 50        # 第三方资料 30~100 字说法不一，取保守值
+    title_style: 问题式 / 观点式
+    templates:
+      - '{name} 解决什么问题？{hook}，附安装与上手'
+      - '{name} 解决什么问题？{hook}，先看痛点再装'
+    brief_max: 120
+    brief_template: '{name} 解决什么问题？{desc_short} 本文先讲痛点，再给出功能、安装命令与上手步骤，所有数字与命令均取自仓库原文。'
+
+  juejin:
+    title_max: 80        # 适配器实测：≤80 字
+    title_style: 技术 + 实用性、强调可操作
+    templates:
+      - '{name} 解决什么问题？{hook}，附完整安装命令'
+      - '{name} 解决什么问题？{hook}，功能与用法一次讲清'
+    brief_max: 100       # 适配器实测：摘要 ≤100 字
+    brief_template: '{name} 解决什么问题？{hook}。先讲痛点再讲功能，命令逐字摘自 README，附上手步骤。'
+
+  csdn:
+    title_max: 50        # 第三方资料 50~100 字说法不一，取保守值；SEO 建议 15~25 字
+    title_style: 教程向、关键词前置
+    templates:
+      - '{name} 解决什么问题？{hook}，功能与安装教程'
+      - '{name} 解决什么问题？{hook}，安装详解'
+    brief_max: 200
+    brief_template: '{name} 解决什么问题？{desc_short} 本文先讲痛点，再给出 {name} 的核心功能、安装教程、使用方法、项目档案与常见问题，安装命令摘自 README 原文，适合新手入门。'
+
+# 真实信号 -> 标题钩子。只有检测到才使用。
+hooks:
+  one_command: '一行命令就能装好'          # 安装块里只有一行有效命令
+  licensed: '{license} 开源协议'            # 有明确 SPDX 许可证
+  high_stars: '{stars} Star 的开源项目'      # star >= 1000
+  new_project: '近期新项目'                 # 创建 <= 90 天
+  fallback: 'README 里有现成安装命令'       # 兜底，也是事实（install_blocks 非空才会入选）
+  max_hooks: 1                            # 只取最强的一个钩子：标题短、有力，也避免超长被裁
+
+# 从仓库 topics（真实标签）映射中文搜索词，用于摘要
+topic_zh:
+  cli: 命令行工具
+  python: Python
+  javascript: JavaScript
+  typescript: TypeScript
+  rust: Rust
+  go: Go
+  markdown: Markdown
+  pdf: PDF
+  docker: Docker
+  ai: AI
+  llm: 大模型
+  mcp: MCP
+  automation: 自动化
+  tool: 效率工具
+  open-source: 开源
+
+# CSDN 标签：项目名进标签，便于站内搜索命中
+csdn_tag_template: '{name},GitHub开源项目,安装教程,{language},新手入门'
+csdn_tag_max: 5
+
+# 文末 FAQ：只回答能由真实字段支撑的问题（SEO 长尾词，不编造结论）
+faq:
+  - q: '{name} 解决什么问题？'
+    a: '见本文第一节。若 README 里有 Why / Motivation / Problem 章节，那里引用的是作者原文；若没有，本文会如实写明「未检出」，不会代为编造痛点或适用场景。'
+  - q: '{name} 怎么安装？'
+    a: '安装命令见本文第三节，逐字摘自项目 README。若执行报错，请优先到仓库页面确认 README 是否已更新。'
+  - q: '{name} 免费吗？'
+    a: '仓库标注的许可证是 {license}。是否可用于商用或二次分发，请以该许可证条款与仓库说明为准。'
+  - q: '{name} 适合新手吗？'
+    a: '本文第二节列出的加分信号来自 README 与仓库元数据的实际检测结果（是否有 Quick Start、能否一行安装、要不要编译等），仅供参考，不代表功能强弱评价。'

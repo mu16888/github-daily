@@ -1,0 +1,72 @@
+# 三平台发布通道配置
+#
+# 重要：只有 zhihu 是官方开放接口。juejin / csdn 是登录态内部接口，
+# 由社区抓包整理，官方从未发布公开文档，随时可能变更或失效。
+# verified 字段表示「接口资料是否被原始来源证实」，不代表「已用你的账号实测」。
+# 用你的账号实测前，请保持 publish.dry_run=true。
+
+platforms:
+  zhihu:
+    enabled: true
+    official: true
+    verified: true
+    source: 'https://github.com/zhihu/ZhihuSync/blob/main/zhihu-publish/reference/publish-openapi.md'
+    base_url: 'https://openapi.zhihu.com'
+    path: '/openapi/publish'
+    method: POST
+    auth: hmac_signature
+    body_format: html              # content.html 必须是 HTML，不是 Markdown
+    daily_limit: 50
+    success_rule: 'response JSON status == 0 (HTTP 200 不代表成功)'
+    secrets: [ZHIHU_APP_KEY, ZHIHU_APP_SECRET]
+
+  juejin:
+    enabled: true
+    official: false
+    verified: true
+    source: 'https://github.com/PsChina/web-publish/blob/main/adapters/juejin.yaml (2026-05-11 实测)'
+    api_base: 'https://api.juejin.cn'
+    endpoints:
+      draft_create: '/content_api/v1/article_draft/create'
+      publish: '/content_api/v1/article/publish'
+      list_by_user: '/content_api/v1/article/list_by_user'   # 凭据探活用
+    query:
+      aid: '2608'
+      spider: '0'
+      # uuid 是用户级常量，从浏览器已登录请求的 URL 里抠出来，放 Secrets
+    auth: cookie
+    body_format: markdown         # mark_content + edit_type:10
+    edit_type: 10
+    draft_fields: [title, mark_content, brief_content, category_id, tag_ids, cover_image, edit_type]
+    publish_fields: [draft_id, sync_to_org, column_ids, theme_ids]
+    title_max: 80
+    brief_max: 100
+    secrets: [JUEJIN_COOKIE, JUEJIN_UUID]
+    note: '响应体字段结构未经本账号实测；首次运行请 dry_run，按日志核对 draft_id 解析。'
+
+  csdn:
+    enabled: true
+    official: false
+    verified: true
+    source: 'CSDN 社区实测文章（blog-console-api/v3/mdeditor/saveArticle，多来源一致）'
+    api_base: 'https://bizapi.csdn.net'
+    path: '/blog-console-api/v3/mdeditor/saveArticle'
+    method: POST
+    auth: cookie_plus_ca_signature
+    # x-ca-* 为阿里云 API 网关签名。下列常量来自公开社区文章，不是你的私有凭据。
+    ca_key: '203803574'
+    ca_sign_secret: '9znpamsyl2c7cdrr9sas0le9vbc3r6ba'
+    ca_signature_headers: 'x-ca-key,x-ca-nonce'
+    content_type: 'application/json'   # 签名串里的 Content-Type 必须与实际请求头一致
+    origin: 'https://editor.csdn.net'
+    referer: 'https://editor.csdn.net/'
+    body_format: both                  # content=HTML，markdowncontent=原始 Markdown
+    payload_static:
+      readType: public
+      status: 0
+      source: pc_mdeditor
+      type: original
+      pubStatus: publish
+    success_rule: 'response JSON code == 200'
+    secrets: [CSDN_COOKIE]
+    note: '签名串的空行与换行必须逐字一致；响应结构未经本账号实测。'
