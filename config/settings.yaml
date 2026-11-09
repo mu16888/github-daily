@@ -60,7 +60,7 @@ schedule:
 
 publish:
   # 总开关。为 false 时只出稿、不调用任何发布接口。
-  enabled: false
+  enabled: true
   # 首次接入务必保持 true：只做凭据探活与请求组装，不真正发文。
   dry_run: true
   # 单平台失败不影响其他平台，也不影响出稿归档
