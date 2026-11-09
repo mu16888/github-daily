@@ -196,15 +196,18 @@ cron 只能写固定时刻，写不出「每天随机」，所以改成**高频�
 
 ## 6. 上线顺序
 
-1. 本地 `python -m src.main --dry-run` 跑通出稿（已完成）。
-2. 建公开仓库、推送代码；`.github/workflows/` 受 `workflow` scope 限制，需账号本人在 GitHub 网页提交那一个文件。
-3. 按 `SECRETS.md` 填 5 组 Secrets。
-4. 先手动 `workflow_dispatch` 且勾 `dry_run=true`，看 `run-summary.json`。
-5. 把 `config/settings.yaml` 的 `publish.enabled` 改 `true`、`dry_run` 改 `false`，
-   并按知乎官方要求把 `zhihu.standing_consent` 改 `true`（这一步即你的一次性授权）。
-6. 手动触发一次真发（勾上 `force` 绕过时间闸门），核验三个平台各出现 1 篇，再交给每日 cron。
-   注意：`.github/workflows/daily.yml` 因 `workflow` scope 限制仍需本人在 GitHub 网页提交，
-   改了发布窗口后要用新版本覆盖旧文件，否则云端还是旧的固定时间。
+1. ✅ 本地 `python -m src.main --dry-run` 跑通出稿；代码已推送（HEAD `4d6a23d`）。
+2. ✅ `.github/workflows/daily.yml` 因 `workflow` scope 限制，已由账号本人于 2026-11-09
+   在 GitHub 网页新建提交（`bcb95eb`），远程内容与本地逐字一致，Actions 识别为 `active`。
+3. ✅ 手动 `workflow_dispatch`（`dry_run=true` + `force=true`）演练跑通：
+   run `42601483641`，12 个步骤全 success，闸门输出 `should_run=true`，49 单测通过，
+   入选 1 个项目并归档，`published=0 / failed=0`。
+4. 按 `SECRETS.md` 填 5 组 Secrets（**当前为空**）。
+5. 先把 `publish.enabled` 改 `true`、保持 `dry_run=true` 再跑一次（确认三平台状态），
+   再把 `dry_run` 改 `false`，并按知乎官方要求把 `zhihu.standing_consent` 改 `true`（这一步即你的一次性授权）。
+6. 手动触发一次真发（勾 `force` 绕过时间闸门），核验三个平台各出现 1 篇，再交给每日 cron。
+   以后再改 `.github/workflows/daily.yml` 仍需本人在 GitHub 网页**整份覆盖提交**，
+   否则云端还是旧版本（推不上去，也不会报错提醒）。
 
 ---
 
