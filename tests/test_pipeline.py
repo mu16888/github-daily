@@ -87,6 +87,14 @@ class TestExtraction(unittest.TestCase):
         self.assertIn("tinytool --help", q)
         self.assertNotIn("## Notes", q)
 
+    def test_usage_section_wins_over_install_heading(self):
+        """回归：Install 排在 Quick Start 前面时，别把安装命令当成上手步骤。"""
+        md = ("# X\n\n## Install\n\n```bash\nbrew install x\n```\n\n"
+              "## Quick Start\n\n```bash\nx run --demo\n```\n")
+        q = extract_quickstart(md)
+        self.assertIn("x run --demo", q)
+        self.assertNotIn("brew install x", q)
+
     def test_no_false_install_command(self):
         self.assertEqual(extract_install_blocks("# X\n\nNo commands here.\n"), [])
 
@@ -564,20 +572,23 @@ class TestSeo(unittest.TestCase):
 class TestStructure(unittest.TestCase):
     def test_pain_point_before_features_and_install(self):
         md = compose(make_repo(), "2026-11-09", SETTINGS, SEO)["markdown"]
-        i_pain = md.find("## 一、")
-        i_what = md.find("## 二、")
-        i_feat = md.find("## 三、")
-        i_inst = md.find("## 五、")
+        i_pain = md.find("## 它解决什么问题")
+        i_what = md.find("## 这是个什么项目")
+        i_feat = md.find("## 能做什么")
+        i_inst = md.find("## 安装教程")
         self.assertTrue(0 < i_pain < i_what < i_feat < i_inst)
         self.assertIn("解决什么问题", md[i_pain:i_what])
-        self.assertIn("核心功能", md[i_feat:i_inst])
+        self.assertIn("功能", md[i_feat:i_inst])
 
     def test_missing_problem_section_is_honest_not_fabricated(self):
         r = make_repo(problem_excerpt="", features_excerpt="")
         md = compose(r, "2026-11-09", SETTINGS, SEO)["markdown"]
-        self.assertIn("没有检出", md)
-        self.assertIn("不编造痛点", md)
-        self.assertIn("不代为罗列功能", md)
+        # 没有 Why / Features 章节时，如实说明并只复述仓库原话，绝不补编场景
+        self.assertIn("没专门写", md)
+        self.assertIn("没单列功能清单", md)
+        self.assertIn("别自己脑补", md)
+        self.assertNotIn("神器", md)
+        self.assertNotIn("必备", md)
 
     def test_author_problem_and_features_are_quoted_verbatim(self):
         r = make_repo(
@@ -587,18 +598,18 @@ class TestStructure(unittest.TestCase):
         md = compose(r, "2026-11-09", SETTINGS, SEO)["markdown"]
         self.assertIn("We built this because doing X by hand is painful.", md)
         self.assertIn("- feature A\n- feature B", md)
-        self.assertIn("原文摘录", md)
+        self.assertIn("作者在仓库说明里写了", md)
 
     def test_faq_and_lead_cover_pain_point(self):
         md = compose(make_repo(), "2026-11-09", SETTINGS, SEO)["markdown"]
-        self.assertIn("tinytool 解决什么问题？", md)
-        self.assertIn("先讲 **tinytool** 解决什么问题", md)
+        self.assertIn("解决什么问题", md)
+        self.assertIn("要不要装，先看它解决什么问题", md)
 
     def test_intro_original_text_quoted_when_no_why_section(self):
         r = make_repo(problem_excerpt="",
                       intro_excerpt="Computer use for AI agents: see and operate desktop apps.\nSecond line.")
         md = compose(r, "2026-11-09", SETTINGS, SEO)["markdown"]
-        self.assertIn("README 开头原文", md)
+        self.assertIn("说明开头是这么写的", md)
         self.assertIn("> Computer use for AI agents: see and operate desktop apps.", md)
 
     def test_quoted_intro_has_no_trailing_fragment(self):
@@ -612,6 +623,31 @@ class TestStructure(unittest.TestCase):
         for p, pcfg in SEO["platforms"].items():
             for tpl in pcfg["templates"]:
                 self.assertIn("解决什么问题", tpl, f"{p} 模板缺少痛点词: {tpl}")
+
+    def test_no_machine_tone_in_article(self):
+        """回归护栏：正文不能退回自曝 / 免责 / 模板腔（text-polisher 规范）。"""
+        md = compose(make_repo(), "2026-11-09", SETTINGS, SEO)["markdown"]
+        banned = [
+            "本文由程序", "自动生成", "GitHub Actions", "采集脚本", "按模板生成",
+            "未使用大模型", "若信息有误", "请以项目仓库为准", "逐字摘自",
+            "没有检出", "未检出", "不编造", "不代为", "不代表任何", "仅供参考",
+            "用大白话说", "打分依据", "综合得分", "门槛", "元数据", "二次分发",
+            "运行时", "## 一、", "## 十、", "信息来源", "采集日期",
+            "首先", "其次", "综上所述", "——", "说白了",
+        ]
+        for word in banned:
+            self.assertNotIn(word, md, f"正文残留机器腔：{word}")
+        self.assertNotIn(".。", md, "英文简介自带句号时不能叠中文句号")
+
+    def test_plain_language_for_beginners(self):
+        """小白可读：术语首次出现要有白话解释，不堆英文缩写。"""
+        r = make_repo()
+        r.score, r.signals = score(r, W)   # 真实流程里 enrich() 会算，补上才看得到信号栏
+        md = compose(r, "2026-11-09", SETTINGS, SEO)["markdown"]
+        self.assertIn("就是收藏数", md)
+        self.assertIn("协议管的是", md)
+        self.assertIn("Quick Start（快速上手）", md)
+        self.assertIn("把源码做成", md)
 
 
 class TestQuota(unittest.TestCase):
