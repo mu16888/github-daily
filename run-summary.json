@@ -1,7 +1,7 @@
 {
   "date": "2026-11-09",
   "picked": 1,
-  "dry_run": false,
+  "dry_run": true,
   "publish_enabled": true,
   "quota": {
     "zhihu": 1,
@@ -10,18 +10,21 @@
   },
   "drafts": [
     {
-      "repo": "jianchang512/pyvideotrans",
-      "title": "pyvideotrans 解决什么问题？功能、安装与使用完整介绍",
+      "repo": "denisidoro/navi",
+      "title": "navi 解决什么问题？功能、安装与使用完整介绍",
       "platform_titles": {
-        "zhihu": "pyvideotrans 解决什么问题？19686 Star 的开源项目，先看痛点再装",
-        "juejin": "pyvideotrans 解决什么问题？19686 Star 的开源项目，功能与用法一次讲清",
-        "csdn": "pyvideotrans 解决什么问题？19686 Star 的开源项目，安装详解"
+        "zhihu": "navi 解决什么问题？一行命令就能装好，先看痛点再装",
+        "juejin": "navi 解决什么问题？一行命令就能装好，功能与用法一次讲清",
+        "csdn": "navi 解决什么问题？一行命令就能装好，安装详解"
       },
-      "keywords": [],
+      "keywords": [
+        "命令行工具",
+        "Rust"
+      ],
       "score": 16,
       "files": [
-        "drafts/2026-11-09/jianchang512__pyvideotrans.md",
-        "drafts/2026-11-09/jianchang512__pyvideotrans.html"
+        "drafts/2026-11-09/denisidoro__navi.md",
+        "drafts/2026-11-09/denisidoro__navi.html"
       ]
     }
   ],
@@ -30,25 +33,26 @@
       "platform": "zhihu",
       "status": "skipped",
       "url": "",
-      "detail": "官方规范要求用户确认后才可 confirmed:true；settings.zhihu.standing_consent=false",
+      "detail": "知乎无可用通道：缺 ZHIHU_APP_KEY/APP_SECRET（官方 OpenAPI）与 ZHIHU_COOKIE（网页会话），或 zhihu.mode=off；按约定跳过，不假报成功",
       "http_status": null
     },
     {
       "platform": "juejin",
-      "status": "failed",
+      "status": "dry_run",
       "url": "",
-      "detail": "[redacted] 请求头含非法换行/标签名导致 InvalidHeader；原始异常含登录态 Cookie，已脱敏，不写入仓库文件。",
+      "detail": "已组装掘金草稿请求（https://api.juejin.cn/content_api/v1/article_draft/create?aid=2608&uuid=7691146270717543955&spider=0，3721 字符），未发送",
       "http_status": null
     },
     {
       "platform": "csdn",
-      "status": "failed",
+      "status": "dry_run",
       "url": "",
-      "detail": "http=401 code=None msg=HMAC signature does not match",
-      "http_status": 401
+      "detail": "已组装请求（https://bizapi.csdn.net/blog-console-api/v3/mdeditor/saveArticle，正文 9146 字符），未实际发送",
+      "http_status": null
     }
   ],
   "published_count": 0,
+  "drafted_count": 0,
   "skipped_count": 1,
-  "failed_count": 2
+  "failed_count": 0
 }
