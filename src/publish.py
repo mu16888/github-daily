@@ -46,6 +46,7 @@ _SENSITIVE_FIELD_RE = re.compile(
     r")\s*=\s*([^;\s,'\"\\)]{1,4000})"
 )
 _PARAM_LABEL_RE = re.compile(r"(?i)^(?:uuid|aid)\s*=\s*")
+_UUID_QUERY_RE = re.compile(r"(?i)\buuid=[0-9A-Za-z_-]{6,}")
 
 
 def clean_cookie(raw: str) -> str:
@@ -80,13 +81,15 @@ def cookie_value(cookie: str, name: str) -> str:
 def redact(text: str, limit: int = 300) -> str:
     """脱敏任何可能进日志 / 公开仓库文件的文本。
 
-    两段：整串 Cookie（很多分号或等号）直接整体丢弃，不做字段级替换，
-    避免漏掉没列进名单的新字段；短消息按敏感字段名逐个打码。
+    三段：整串 Cookie（很多分号或等号）直接整体丢弃，不做字段级替换，
+    避免漏掉没列进名单的新字段；短消息按敏感字段名逐个打码；
+    最后把 URL 里的用户级 uuid（Secret 派生值）也打码，不写进公开文件。
     """
     s = str(text or "").replace("\r", " ").replace("\n", " ")
     if s.count(";") >= 3 or s.count("=") >= 8:
         return "[redacted] 原始消息疑似含完整请求头或 Cookie，已整体脱敏（不写入公开文件）"
     s = _SENSITIVE_FIELD_RE.sub(lambda m: f"{m.group(1)}=***", s)
+    s = _UUID_QUERY_RE.sub("uuid=***", s)
     s = re.sub(r"\s+", " ", s).strip()
     return s[:limit]
 
