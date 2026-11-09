@@ -74,7 +74,8 @@ zhihu:
   #   openapi = C：官方 Publish OpenAPI，需 ZHIHU_APP_KEY/APP_SECRET（「发布者」内测资格）
   #   web     = B：登录态网页会话，需 ZHIHU_COOKIE（不需要内测）
   #   auto    = 有官方凭据且已授权则走 C，否则有 ZHIHU_COOKIE 就走 B，都没有则 A 跳过
-  mode: auto
+  # 2026-11-09 锋哥选 A：先跳过知乎，只跑掘金 + CSDN；跑通后随时可切 web / openapi
+  mode: off
   # B 通道是否尝试第三步「公开发布」。true=全自动（可能需要前端动态签名 x-zse-96，
   # 失败会如实 failed 且草稿仍在）；false=只自动建草稿+写正文，返回 drafted 供人工点发布。
   web_auto_publish: true
