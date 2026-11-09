@@ -48,10 +48,15 @@ E 盘也没有备份。所以：
 
 ## 三、首次上线顺序（别跳步）
 
-1. **先别填 Secrets**，用 `workflow_dispatch` 勾 `dry_run=true` 手动跑一次，
-   看 `run-summary.json`：应有 `picked >= 1`、三个平台 `dry_run` 或 `skipped`、无 `failed`。
-2. 填好 5 组 Secrets，仍保持 `dry_run=true` 再跑一次，确认凭据齐备（状态从 `skipped` 变 `dry_run`）。
-3. 真发之前，把 `config/settings.yaml` 三个开关改掉并推送：
+1. **先别填 Secrets，跑一次演练** —— ✅ 2026-11-09 已完成：run `42601483641`，12 个步骤全 success。
+   `workflow_dispatch` 勾 `dry_run=true` + `force=true`。此时 `publish.enabled=false`，
+   日志是「启用 0 个发布适配器」，只看 `run-summary.json`：
+   `picked>=1`、`published=0`、`failed=0`，并生成草稿归档（实测入选 `vercel-labs/agent-desktop`）。
+2. **填 5 组 Secrets**（§一）。凭据由你本人在浏览器取，不要发给我。
+3. 把 `publish.enabled` 改成 `true`，**保持 `dry_run: true`**，再手动跑一次（`force=true`）：
+   这一步才会出现三个适配器，状态应为 `dry_run` 或 `skipped`（缺凭据的平台）。
+   出现 `skipped` 说明对应 Secret 没填或没生效，先补齐再往下走。
+4. 真发之前，把 `config/settings.yaml` 三个开关改掉并推送：
    ```yaml
    publish:
      enabled: true
@@ -59,25 +64,26 @@ E 盘也没有备份。所以：
    zhihu:
      standing_consent: true    # 仅当你已确认接受长期授权
    ```
-4. 手动 `workflow_dispatch`（不勾 dry_run）跑一次，到三个平台各核对 1 篇文章。
+5. 手动 `workflow_dispatch`（不勾 dry_run，勾 `force` 绕过时间闸门）跑一次，到三个平台各核对 1 篇文章。
    **首次真发务必人工看一眼**，重点核对：掘金/CSDN 的响应结构解析、CSDN 是否出现 Markdown 源码乱码（正文必须是 HTML）、知乎是否返回 `status=0`。
-5. 确认无误后交给每日 cron（`17 1 * * *` UTC = 北京 09:17）。
+6. 确认无误后交给每日 cron。现在是「每 15 分钟唤醒 + 到点闸门」，实际发布时间每天不同
+   （北京 08:30–10:45，周末顺延，三平台再错峰几分钟），见 `DESIGN.md` §5.2。
 
 ---
 
-## 四、一个必须本人做的动作：提交 workflow 文件
+## 四、workflow 文件：已由本人在网页提交
 
-现有 `gh` 令牌只有 `repo` 权限，**没有 `workflow` 权限**，推 `.github/workflows/` 会被 GitHub 硬拦
-（此前 FreeScrape 项目已实测：HTTPS 推送、contents API、Git Data API、临时部署密钥 + SSH 四条路都被同一道闸门挡住）。
+`gh` 令牌只有 `repo` 权限、**没有 `workflow`**，推 `.github/workflows/` 会被 GitHub 硬拦
+（FreeScrape 项目实测：HTTPS 推送、contents API、Git Data API、临时部署密钥 + SSH 四条路都被同一道闸门挡住）。
 
-所以 `.github/workflows/daily.yml` 需要你在 **GitHub 网页**用浏览器登录态新建一次：
+✅ **2026-11-09 已完成**：`daily.yml` 由账号本人在 GitHub 网页新建提交（`bcb95eb`），
+远程内容与本地逐字一致（2976 字节），Actions 已识别为 `daily-github-picks / active`，
+随后演练 run `42601483641` 全绿。
 
-- 打开 `https://github.com/mu16888/github-daily/new/main?filename=.github%2Fworkflows%2Fdaily.yml`
-- 把本地 `.github/workflows/daily.yml` 的内容粘进去
-- 点 **Commit new file**
-
-这是唯一需要你动手的一步（填 Secrets 也可由你本人完成，更安全）。
-其他代码文件我可以直接推送。
+**以后再改这个文件**（例如调发布窗口）仍需同样方式：打开
+`https://github.com/mu16888/github-daily/edit/main/.github/workflows/daily.yml`
+整份覆盖后提交；或用 `E:\workbuddy工作台\网站建设\github-daily_webcommit.html` 的一键链接。
+除这个文件外，其他代码文件我可以直接推送。
 
 ---
 
