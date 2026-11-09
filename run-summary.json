@@ -1,7 +1,7 @@
 {
   "date": "2026-11-09",
   "picked": 1,
-  "dry_run": true,
+  "dry_run": false,
   "publish_enabled": true,
   "quota": {
     "zhihu": 1,
@@ -38,21 +38,21 @@
     },
     {
       "platform": "juejin",
-      "status": "dry_run",
+      "status": "published",
       "url": "",
-      "detail": "已组装掘金草稿请求（https://api.juejin.cn/content_api/v1/article_draft/create?aid=2608&uuid=***&spider=0，3721 字符），未发送",
-      "http_status": null
+      "detail": "draft_id=7706073526894002227 | http=200 | publish code=0 msg=success",
+      "http_status": 200
     },
     {
       "platform": "csdn",
-      "status": "dry_run",
+      "status": "failed",
       "url": "",
-      "detail": "已组装请求（https://bizapi.csdn.net/blog-console-api/v3/mdeditor/saveArticle，正文 9146 字符），未实际发送",
-      "http_status": null
+      "detail": "http=400 code=400 msg=博主不存在",
+      "http_status": 400
     }
   ],
-  "published_count": 0,
+  "published_count": 1,
   "drafted_count": 0,
   "skipped_count": 1,
-  "failed_count": 0
+  "failed_count": 1
 }
