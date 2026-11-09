@@ -21,7 +21,10 @@ from src.discover import (  # noqa: E402
     Repo, extract_features, extract_install_blocks, extract_intro, extract_quickstart, score,
 )
 from src.main import load_yaml, quota_used, seen_repos  # noqa: E402
-from src.publish import CsdnPublisher, JuejinPublisher, ZhihuPublisher, all_publishers  # noqa: E402
+from src.publish import (  # noqa: E402
+    CsdnPublisher, JuejinPublisher, Result, ZhihuPublisher, _ZhihuOpenApi, _ZhihuWeb,
+    all_publishers, clean_cookie, clean_param, csdn_sign_string, redact, safe_url,
+)
 from src.seo import build as seo_build, load_seo  # noqa: E402
 
 SETTINGS = load_yaml(ROOT / "config" / "settings.yaml")
@@ -289,6 +292,190 @@ class TestPublishers(unittest.TestCase):
             "code": 200, "data": {"url": "https://blog.csdn.net/x"}}))
         self.assertTrue(ok)
         self.assertEqual(link, "https://blog.csdn.net/x")
+
+
+class TestCredentialHygiene(unittest.TestCase):
+    def test_clean_cookie_strips_label_colon_and_newlines(self):
+        raw = "cookie: log_Id_10=abc;\nUserInfo=xxx;\ncsrfToken=yyy; dc_tos=logsps"
+        got = clean_cookie(raw)
+        self.assertEqual(got, "log_Id_10=abc; UserInfo=xxx; csrfToken=yyy; dc_tos=logsps")
+        self.assertNotIn("\n", got)
+        self.assertFalse(got.lower().startswith("cookie"))
+
+    def test_clean_cookie_strips_bare_label_with_newline(self):
+        got = clean_cookie("cookie\nlog_Id_10=abc; UserInfo=x")
+        self.assertTrue(got.startswith("log_Id_10="))
+        self.assertNotIn("cookie", got.lower())
+
+    def test_clean_cookie_does_not_eat_cookie_prefixed_field(self):
+        self.assertEqual(clean_cookie("cookie_consent=yes; a=1"), "cookie_consent=yes; a=1")
+
+    def test_label_only_cookie_is_treated_as_missing(self):
+        pub = CsdnPublisher(PLATFORMS["platforms"]["csdn"], SETTINGS,
+                            {"CSDN_COOKIE": "cookie:\n\n"}, dry_run=False)
+        self.assertIn("CSDN_COOKIE", pub.missing())
+        r = pub.publish({"title": "t", "html": "x", "markdown": "x"})
+        self.assertEqual(r.status, "skipped")
+
+    def test_clean_param_strips_label_and_query_tail(self):
+        self.assertEqual(clean_param("uuid=7691146270717543955&spider=0"), "7691146270717543955")
+        self.assertEqual(clean_param("7691146270717543955"), "7691146270717543955")
+
+    def test_redact_drops_full_cookie_from_exception(self):
+        msg = ("InvalidHeader: Invalid leading whitespace in header value: "
+               "'cookie\\n_tea_utm_cache=undefined; s_v_web_id=verify_x; sessionid=abc; "
+               "sid_guard=def; passport_csrf_token=ghi'")
+        out = redact(msg)
+        self.assertIn("[redacted]", out)
+        self.assertNotIn("abc", out)
+        self.assertNotIn("passport_csrf_token=ghi", out)
+
+    def test_redact_masks_named_field_in_short_message(self):
+        out = redact("auth failed for sessionid=abc")
+        self.assertIn("sessionid=***", out)
+        self.assertNotIn("abc", out)
+
+    def test_result_is_redacted_before_any_file_write(self):
+        r = Result("juejin", "failed", url="https://juejin.cn/post/1?token=SECRET",
+                   detail="InvalidHeader: cookie\n a=1; b=2; c=3; sessionid=abc; d=4")
+        d = r.as_dict()
+        self.assertNotIn("sessionid=abc", json.dumps(d))
+        self.assertEqual(d["url"], "https://juejin.cn/post/1")
+        self.assertIn("[redacted]", d["detail"])
+
+    def test_safe_url_rejects_non_http_values(self):
+        self.assertEqual(safe_url("javascript:alert(1)"), "")
+        self.assertEqual(safe_url(""), "")
+
+
+class TestCsdnSignature(unittest.TestCase):
+    def test_sign_string_uses_accept_and_matches_request_headers(self):
+        cfg = PLATFORMS["platforms"]["csdn"]
+        pub = CsdnPublisher(cfg, SETTINGS, {"CSDN_COOKIE": "a=1; b=2"}, dry_run=False)
+        _url, headers, _body = pub.build({
+            "title": "t", "html": "<p>x</p>", "markdown": "# t", "brief": "b"})
+        to_sign = csdn_sign_string("POST", headers["accept"], headers["content-type"],
+                                   headers["x-ca-key"], headers["x-ca-nonce"], cfg["path"])
+        parts = to_sign.split("\n")
+        self.assertEqual(parts[0], "POST")
+        self.assertEqual(parts[1], headers["accept"])       # 旧版这里是 "/"
+        self.assertEqual(parts[2], "")                      # Content-MD5 为空
+        self.assertEqual(parts[3], headers["content-type"])
+        self.assertEqual(parts[4], "")                      # Date 为空
+        self.assertEqual(parts[-1], cfg["path"])
+        expected = base64.b64encode(hmac.new(
+            str(cfg["ca_sign_secret"]).encode(), to_sign.encode(), hashlib.sha256
+        ).digest()).decode()
+        self.assertEqual(headers["x-ca-signature"], expected)
+        self.assertEqual(headers["content-type"], "application/json;charset=UTF-8")
+
+    def test_csdn_cookie_is_normalized_before_use(self):
+        pub = CsdnPublisher(PLATFORMS["platforms"]["csdn"], SETTINGS,
+                            {"CSDN_COOKIE": "cookie: a=1;\nb=2"}, dry_run=False)
+        _u, h, _b = pub.build({"title": "t", "html": "x", "markdown": "x", "brief": "b"})
+        self.assertEqual(h["cookie"], "a=1; b=2")
+
+
+class TestZhihuChannels(unittest.TestCase):
+    def _settings(self, **kw):
+        s = json.loads(json.dumps(SETTINGS))
+        s["zhihu"].update(kw)
+        return s
+
+    def _article(self):
+        return {"title": "t", "html": "<p>x</p>", "markdown": "# t", "brief": "b"}
+
+    def test_mode_off_is_skipped(self):
+        pub = ZhihuPublisher(PLATFORMS["platforms"]["zhihu"], self._settings(mode="off"),
+                             {"ZHIHU_COOKIE": "z_c0=abc; _xsrf=tok"}, dry_run=False)
+        self.assertEqual(pub.publish(self._article()).status, "skipped")
+
+    def test_auto_without_credentials_is_skipped(self):
+        pub = ZhihuPublisher(PLATFORMS["platforms"]["zhihu"], self._settings(mode="auto"),
+                             {}, dry_run=False)
+        r = pub.publish(self._article())
+        self.assertEqual(r.status, "skipped")
+        self.assertIn("无可用通道", r.detail)
+
+    def test_openapi_still_requires_consent(self):
+        pub = ZhihuPublisher(PLATFORMS["platforms"]["zhihu"], self._settings(mode="openapi"),
+                             {"ZHIHU_APP_KEY": "k", "ZHIHU_APP_SECRET": "s"}, dry_run=False)
+        self.assertEqual(pub.publish(self._article()).status, "skipped")
+
+    def test_auto_prefers_openapi_when_consented(self):
+        s = self._settings(mode="auto", standing_consent=True)
+        pub = ZhihuPublisher(PLATFORMS["platforms"]["zhihu"], s, {
+            "ZHIHU_APP_KEY": "k", "ZHIHU_APP_SECRET": "s",
+            "ZHIHU_COOKIE": "z_c0=abc; _xsrf=t"}, dry_run=True)
+        self.assertIsInstance(pub._impl(), _ZhihuOpenApi)
+        r = pub.publish(self._article())
+        self.assertEqual(r.status, "dry_run")
+        self.assertIn("openapi.zhihu.com", r.detail)
+
+    def test_auto_falls_back_to_web_channel(self):
+        s = self._settings(mode="auto", standing_consent=False)
+        pub = ZhihuPublisher(PLATFORMS["platforms"]["zhihu"], s,
+                             {"ZHIHU_COOKIE": "z_c0=abc; _xsrf=tok"}, dry_run=True)
+        self.assertIsInstance(pub._impl(), _ZhihuWeb)
+
+    def test_web_dry_run_does_not_post(self):
+        impl = _ZhihuWeb(PLATFORMS["platforms"]["zhihu"], self._settings(mode="web"),
+                         {"ZHIHU_COOKIE": "z_c0=abc; _xsrf=tok"}, dry_run=True)
+        with patch.object(impl.session, "post", side_effect=AssertionError("must not post")):
+            r = impl.publish(self._article())
+        self.assertEqual(r.status, "dry_run")
+        self.assertIn("zhuanlan.zhihu.com", r.detail)
+
+    def test_web_missing_cookie_is_skipped(self):
+        impl = _ZhihuWeb(PLATFORMS["platforms"]["zhihu"], self._settings(mode="web"),
+                         {}, dry_run=False)
+        self.assertEqual(impl.publish(self._article()).status, "skipped")
+
+    def test_web_publish_strict_failure_keeps_draft(self):
+        impl = _ZhihuWeb(PLATFORMS["platforms"]["zhihu"],
+                         self._settings(mode="web", web_auto_publish=True),
+                         {"ZHIHU_COOKIE": "z_c0=abc; _xsrf=tok"}, dry_run=False)
+        draft = _FakeResp(200, {"id": "d1", "url": "https://www.zhihu.com/creator/drafts"})
+        with patch.object(impl.session, "post", side_effect=[draft, _FakeResp(403, ValueError("waf"))]), \
+             patch.object(impl.session, "patch", return_value=_FakeResp(200, {"id": "d1"})):
+            r = impl.publish(self._article())
+        self.assertEqual(r.status, "failed")
+        self.assertEqual(r.http_status, 403)
+        self.assertIn("草稿仍在", r.detail)
+        self.assertIn("creator/drafts", r.url)
+
+    def test_web_publish_explicit_success_only(self):
+        impl = _ZhihuWeb(PLATFORMS["platforms"]["zhihu"],
+                         self._settings(mode="web", web_auto_publish=True),
+                         {"ZHIHU_COOKIE": "z_c0=abc; _xsrf=tok"}, dry_run=False)
+        draft = _FakeResp(200, {"id": "d1", "url": "https://www.zhihu.com/creator/drafts"})
+        ok = _FakeResp(200, {"code": 0, "data": {"result": json.dumps({"publish": {"id": "123"}})}})
+        with patch.object(impl.session, "post", side_effect=[draft, ok]), \
+             patch.object(impl.session, "patch", return_value=_FakeResp(200, {"id": "d1"})):
+            r = impl.publish(self._article())
+        self.assertEqual(r.status, "published")
+        self.assertEqual(r.url, "https://zhuanlan.zhihu.com/p/123")
+
+    def test_web_empty_publish_response_is_failed_not_published(self):
+        impl = _ZhihuWeb(PLATFORMS["platforms"]["zhihu"],
+                         self._settings(mode="web", web_auto_publish=True),
+                         {"ZHIHU_COOKIE": "z_c0=abc; _xsrf=tok"}, dry_run=False)
+        draft = _FakeResp(200, {"id": "d1", "url": "https://www.zhihu.com/creator/drafts"})
+        with patch.object(impl.session, "post", side_effect=[draft, _FakeResp(200, {})]), \
+             patch.object(impl.session, "patch", return_value=_FakeResp(200, {"id": "d1"})):
+            r = impl.publish(self._article())
+        self.assertEqual(r.status, "failed")
+
+    def test_web_draft_only_is_drafted_and_never_calls_publish(self):
+        impl = _ZhihuWeb(PLATFORMS["platforms"]["zhihu"],
+                         self._settings(mode="web", web_auto_publish=False),
+                         {"ZHIHU_COOKIE": "z_c0=abc; _xsrf=tok"}, dry_run=False)
+        draft = _FakeResp(200, {"id": "d1", "url": "https://www.zhihu.com/creator/drafts"})
+        with patch.object(impl.session, "post", return_value=draft) as post, \
+             patch.object(impl.session, "patch", return_value=_FakeResp(200, {"id": "d1"})):
+            r = impl.publish(self._article())
+        self.assertEqual(r.status, "drafted")
+        self.assertEqual(post.call_count, 1)   # 只建草稿，不调公开发布接口
 
 
 class TestSeo(unittest.TestCase):
