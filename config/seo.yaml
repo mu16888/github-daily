@@ -12,7 +12,7 @@ platforms:
       - '{name} 解决什么问题？{hook}，附安装与上手'
       - '{name} 解决什么问题？{hook}，装之前先看看'
     brief_max: 120
-    brief_template: '{name} 解决什么问题？{desc_short} 从它要解决的麻烦说起，功能、安装命令和上手步骤顺着往下看。'
+    brief_template: '{name} 解决什么问题？{desc_short} 先看它替你解决什么麻烦，功能、安装命令和上手步骤都讲到了。'
 
   juejin:
     title_max: 80        # 适配器实测：≤80 字
@@ -21,7 +21,7 @@ platforms:
       - '{name} 解决什么问题？{hook}，附完整安装命令'
       - '{name} 解决什么问题？{hook}，功能与用法一次讲清'
     brief_max: 100       # 适配器实测：摘要 ≤100 字
-    brief_template: '{name} 解决什么问题？{hook}。功能、安装命令、上手步骤都写在下面，照着做就行。'
+    brief_template: '{name} 解决什么问题？{hook}。功能、安装命令和上手步骤都讲到了，照着做就行。'
 
   csdn:
     title_max: 50        # 第三方资料 50~100 字说法不一，取保守值；SEO 建议 15~25 字
@@ -30,7 +30,7 @@ platforms:
       - '{name} 解决什么问题？{hook}，功能与安装教程'
       - '{name} 解决什么问题？{hook}，安装详解'
     brief_max: 200
-    brief_template: '{name} 解决什么问题？{desc_short} 核心功能、安装教程、上手步骤和常见问题都整理好了，命令照仓库说明抄，新手跟着做就行。'
+    brief_template: '{name} 解决什么问题？{desc_short} 核心功能、安装教程、上手步骤和常见问题一次给齐，命令照仓库说明抄，新手跟着做就行。'
 
 # 真实信号 -> 标题钩子。只有检测到才使用。
 hooks:
