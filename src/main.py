@@ -20,7 +20,7 @@ import yaml
 
 from .compose import compose
 from .discover import _session, pick
-from .publish import Result, all_publishers
+from .publish import Result, all_publishers, redact
 from .schedule import mark_dispatched, stagger_plan
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -162,10 +162,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 r = pub.publish(article)
             results.append(r.as_dict())
             print(f"      [{r.status:9s}] {r.platform}: {r.detail[:120]}")
-            if r.status == "published" and not settings["publish"]["dry_run"]:
+            # drafted 也要占住当天名额：草稿虽未公开，但重复建同样会刷屏。
+            if r.status in ("published", "drafted") and not settings["publish"]["dry_run"]:
                 state["seen"][repo.full_name]["platforms"][r.platform] = {
                     "url": r.url,
                     "at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+                    "status": r.status,
                 }
 
     print("[4/5] 写台账与运行摘要")
@@ -181,6 +183,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "drafts": drafts,
         "publish": results,
         "published_count": sum(1 for r in results if r["status"] == "published"),
+        "drafted_count": sum(1 for r in results if r["status"] == "drafted"),
         "skipped_count": sum(1 for r in results if r["status"] == "skipped"),
         "failed_count": sum(1 for r in results if r["status"] == "failed"),
     }
@@ -207,10 +210,11 @@ def main() -> int:
     except Exception as e:
         # 抓取/成稿阶段失败必须让 CI 变红，不静默吞掉；
         # 同时覆盖旧的 run-summary.json，避免失败运行留下上一次的成功摘要被误读。
-        print(f"FATAL: {type(e).__name__}: {e}", file=sys.stderr)
+        safe_error = redact(f"{type(e).__name__}: {e}")
+        print(f"FATAL: {safe_error}", file=sys.stderr)
         SUMMARY_FILE.write_text(
             json.dumps({"date": args.date, "status": "failed",
-                        "error": f"{type(e).__name__}: {e}"}, ensure_ascii=False, indent=2) + "\n",
+                        "error": safe_error}, ensure_ascii=False, indent=2) + "\n",
             encoding="utf-8",
         )
         return 1
