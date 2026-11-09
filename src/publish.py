@@ -216,13 +216,25 @@ class JuejinPublisher(BasePublisher):
             pub_body = {"draft_id": draft_id, "sync_to_org": False, "column_ids": [], "theme_ids": []}
             r2 = self.session.post(pub_url, headers=headers, json=pub_body, timeout=30)
             d2 = _json(r2)
-            ok = (d2.get("err_no") in (0, None) and d2.get("code") in (0, 200, None)) or bool(d2.get("data"))
+            # 严格判定：必须 HTTP 200 且响应里出现「明确的」成功信号。
+            # 旧写法把字段缺失也当成功（err_no=None in (0, None) 恒为真），
+            # 境外 IP 被风控拦截时返回 403 HTML / 空 JSON，会误报 published。
+            ok = (
+                r2.status_code == 200
+                and (
+                    bool(d2.get("data"))
+                    or d2.get("err_no") == 0
+                    or d2.get("code") in (0, 200)
+                )
+            )
             link = ""
             if isinstance(d2.get("data"), dict):
                 link = str(d2["data"].get("article_url") or d2["data"].get("url") or "")
             return Result(self.name, "published" if ok else "failed", url=link,
                           http_status=r2.status_code,
-                          detail=f"draft_id={draft_id} | publish code={d2.get('code') or d2.get('err_no')} msg={d2.get('msg') or d2.get('err_msg') or ''}")
+                          detail=f"draft_id={draft_id} | http={r2.status_code} | "
+                                 f"publish code={d2.get('code') or d2.get('err_no')} "
+                                 f"msg={d2.get('msg') or d2.get('err_msg') or ''}")
         except Exception as e:
             return Result(self.name, "failed", detail=f"{type(e).__name__}: {e}")
 
@@ -273,10 +285,12 @@ class CsdnPublisher(BasePublisher):
     def judge(self, resp: requests.Response) -> tuple[bool, str, str]:
         data = _json(resp)
         code = data.get("code")
-        ok = code in (200, "200")
+        # 业务码与 HTTP 状态都必须是 200：网关/WAF 拦截页有时也会带一个 JSON 体，
+        # 只看 code 会把失败当成发布成功。
+        ok = resp.status_code == 200 and code in (200, "200")
         d = data.get("data") or {}
         link = str(d.get("url") or "") if isinstance(d, dict) else ""
-        return ok, link, f"code={code!r} msg={str(data.get('msg') or data.get('message') or '')[:120]}"
+        return ok, link, f"http={resp.status_code} code={code!r} msg={str(data.get('msg') or data.get('message') or '')[:120]}"
 
 
 def all_publishers(platforms_cfg: dict, settings: dict) -> list[BasePublisher]:
