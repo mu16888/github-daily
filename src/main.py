@@ -12,6 +12,7 @@ import datetime as dt
 import json
 import os
 import sys
+import time
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,7 @@ import yaml
 from .compose import compose
 from .discover import _session, pick
 from .publish import Result, all_publishers
+from .schedule import mark_dispatched, stagger_plan
 
 ROOT = Path(__file__).resolve().parent.parent
 STATE_FILE = ROOT / "state" / "published.json"
@@ -104,12 +106,29 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     session = _session()
     repos = pick(session, settings, already, limit=args.limit)
     print(f"[2/5] 入选 {len(repos)} 个项目")
+    note = ""
     if not repos:
-        return {"date": args.date, "picked": 0, "drafts": [], "publish": [],
-                "note": "没有达到分数门槛的新项目，本次不发文（不编凑内容）"}
+        note = "没有达到分数门槛的新项目，本次不发文（不编凑内容）"
+        print(f"      {note}")
+
+    # 只有「闸门放行的那一棒」（CI 传 --dispatched）才占住当天唯一名额并立即落盘：
+    # (a) 后续 15 分钟一次的唤醒直接空跑，不重复抓 GitHub / 不重复发文；
+    # (b) 即使成稿或发布阶段抛异常，也不会因台账没写而重复发文。
+    # 抓候选本身失败时不写，留给后面的唤醒重试。本地直接跑不传该参数，
+    # 因此本地演练完全不碰台账，也不会误把「今天已派发」推上去挡住云端。
+    if getattr(args, "dispatched", False):
+        mark_dispatched(state, args.date, "dry_run" if settings["publish"]["dry_run"] else "live")
+        STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     publishers = all_publishers(platforms, settings) if settings["publish"]["enabled"] else []
     print(f"[3/5] 启用 {len(publishers)} 个发布适配器 | dry_run={settings['publish']['dry_run']}")
+
+    try:
+        schedule_date = dt.date.fromisoformat(args.date)
+    except ValueError:
+        schedule_date = dt.date.today()
+    plan = stagger_plan(schedule_date, settings.get("schedule", {}), [p.name for p in publishers])
 
     drafts, results = [], []
     for repo in repos:
@@ -135,6 +154,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             if used >= cap:
                 r = Result(pub.name, "skipped", detail=f"今日配额已满（{used}/{cap}，{model}），跳过以防重复发文")
             else:
+                # 三个平台错峰发出，别让同一秒三连发（演练与配额跳过时不等待）
+                delay = plan.get(pub.name, 0)
+                if delay and not settings["publish"]["dry_run"]:
+                    print(f"      平台错峰：等待 {delay}s 后发 {pub.name}")
+                    time.sleep(delay)
                 r = pub.publish(article)
             results.append(r.as_dict())
             print(f"      [{r.status:9s}] {r.platform}: {r.detail[:120]}")
@@ -160,6 +184,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "skipped_count": sum(1 for r in results if r["status"] == "skipped"),
         "failed_count": sum(1 for r in results if r["status"] == "failed"),
     }
+    if note:
+        summary["note"] = note
     SUMMARY_FILE.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print("[5/5] 完成")
     return summary
@@ -171,6 +197,8 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=None, help="本次出稿数量")
     ap.add_argument("--dry-run", action="store_true", help="只组装请求，不调用发布接口")
     ap.add_argument("--no-publish", action="store_true", help="完全跳过发布层，只出稿")
+    ap.add_argument("--dispatched", action="store_true",
+                    help="CI 闸门放行的当日一棒：写 schedule.last_dispatched，防止重复派发")
     args = ap.parse_args()
     if args.limit is None:
         args.limit = int(load_yaml(ROOT / "config" / "settings.yaml")["daily"]["picks_per_day"])

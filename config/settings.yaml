@@ -42,6 +42,22 @@ quota:
     csdn: 1       # 官方 2025-11-03 公告下调每日上限；VIP 页 5/15 篇，免费用户社区实测约 1~2 篇
   model: calendar_day   # calendar_day | rolling_24h
 
+# 仿人工发布时间：不要让每天的文章卡在同一分钟发出去。
+# GitHub Actions 的 cron 只能写固定时刻，所以 workflow 改成每 15 分钟唤醒一次，
+# 由 src/schedule.py 用 HMAC(日期+盐) 确定性算出当天唯一目标时刻，到点才放行。
+# 确定性 = 唤醒被延迟/取消时下一棒算出的还是同一时刻，会补发，不会漏发或重发。
+schedule:
+  enabled: true
+  utc_offset_hours: 8       # 北京时间固定 UTC+8，无夏令时，不依赖 tzdata
+  window_start: '08:30'     # 可发布窗口（本地时间），目标时刻只落在窗口内
+  window_end: '10:45'
+  weekend_delay_minutes: 45 # 周六日整体顺延，更像真人作息
+  poll_minutes: 15          # 必须与 .github/workflows/daily.yml 的 cron 间隔一致
+  salt: 'github-daily-human-2026-11'   # 改这个字符串，整套每日时刻序列就换一套
+  avoid_round_minutes: true # 避开整点 / 整 5 分 / 整 10 分，秒也避开 0
+  stagger_min_seconds: 90   # 三平台之间的错峰下限
+  stagger_max_seconds: 420  # 上限；按发布顺序累加，最长约 14 分钟
+
 publish:
   # 总开关。为 false 时只出稿、不调用任何发布接口。
   enabled: false

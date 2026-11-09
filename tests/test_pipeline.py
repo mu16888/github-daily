@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import datetime as dt
 import hashlib
 import hmac
 import json
@@ -13,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 import yaml  # noqa: E402
+from src import schedule as sched  # noqa: E402
 from src.compose import compose, md_to_html  # noqa: E402
 from src.discover import (  # noqa: E402
     Repo, extract_features, extract_install_blocks, extract_intro, extract_quickstart, score,
@@ -383,6 +385,81 @@ class TestDedup(unittest.TestCase):
     def test_old_repo_can_be_picked_again(self):
         state = {"seen": {"old/repo": {"first_date": "2020-01-01", "platforms": {}}}}
         self.assertNotIn("old/repo", seen_repos(state, 120))
+
+
+class TestSchedule(unittest.TestCase):
+    """仿人工发布时间：确定性 + 每天错位 + 闸门不重发。"""
+    CFG = SETTINGS["schedule"]
+    TZ = sched.local_tz(CFG)
+    DAY0 = dt.date(2026, 11, 9)
+
+    def test_same_day_same_target(self):
+        d = self.DAY0
+        self.assertEqual(sched.target_for(d, self.CFG), sched.target_for(d, self.CFG))
+
+    def test_two_weeks_are_not_fixed_times(self):
+        seen = set()
+        for i in range(14):
+            t = sched.target_for(self.DAY0 + dt.timedelta(days=i), self.CFG).astimezone(self.TZ)
+            seen.add(t.strftime("%H:%M:%S"))
+        self.assertGreaterEqual(len(seen), 13, "14 天里几乎每天都要落在不同的时刻")
+
+    def test_target_stays_inside_window_and_avoids_round_minutes(self):
+        start = sched._hhmm(self.CFG["window_start"])
+        end = sched._hhmm(self.CFG["window_end"])
+        for i in range(14):
+            d = self.DAY0 + dt.timedelta(days=i)
+            shift = self.CFG["weekend_delay_minutes"] if d.weekday() >= 5 else 0
+            t = sched.target_for(d, self.CFG).astimezone(self.TZ)
+            minute = t.hour * 60 + t.minute
+            self.assertGreaterEqual(minute, start + shift)
+            self.assertLessEqual(minute, end + shift)
+            self.assertNotEqual(t.minute % 5, 0, f"{d} 落在整 5 分刻度上")
+            self.assertNotEqual(t.second, 0)
+
+    def test_salt_changes_the_whole_series(self):
+        cfg = dict(self.CFG, salt="another-salt")
+        a = [sched.target_for(self.DAY0 + dt.timedelta(days=i), self.CFG) for i in range(5)]
+        b = [sched.target_for(self.DAY0 + dt.timedelta(days=i), cfg) for i in range(5)]
+        self.assertNotEqual(a, b)
+
+    def test_gate_wait_sleep_run_and_done(self):
+        target = sched.target_for(self.DAY0, self.CFG)
+        tz = self.TZ
+        action, _, _ = sched.decide(target - dt.timedelta(minutes=60), self.CFG, {})
+        self.assertEqual(action, "wait", "离目标还很远，这一棒应空跑退出")
+        action, wait, _ = sched.decide(target - dt.timedelta(minutes=5), self.CFG, {})
+        self.assertEqual(action, "sleep")
+        self.assertAlmostEqual(wait, 300, delta=2)
+        action, _, _ = sched.decide(target + dt.timedelta(minutes=5), self.CFG, {})
+        self.assertEqual(action, "run", "错过目标要能补发，不能漏一天")
+        state = {"seen": {}, "schedule": {"last_dispatched": self.DAY0.isoformat()}}
+        action, _, _ = sched.decide(target + dt.timedelta(minutes=5), self.CFG, state)
+        self.assertEqual(action, "done", "当天已派发，后续唤醒必须空跑")
+
+    def test_force_and_off(self):
+        target = sched.target_for(self.DAY0, self.CFG)
+        state = {"schedule": {"last_dispatched": self.DAY0.isoformat()}}
+        self.assertEqual(sched.decide(target, self.CFG, state, force=True)[0], "run")
+        self.assertEqual(sched.decide(target, dict(self.CFG, enabled=False), {})[0], "off")
+
+    def test_stagger_is_monotonic_deterministic_and_bounded(self):
+        names = ["zhihu", "juejin", "csdn"]
+        p1 = sched.stagger_plan(self.DAY0, self.CFG, names)
+        p2 = sched.stagger_plan(self.DAY0, self.CFG, names)
+        self.assertEqual(p1, p2)
+        self.assertEqual(p1["zhihu"], 0)
+        self.assertLess(p1["juejin"], p1["csdn"])
+        lo, hi = self.CFG["stagger_min_seconds"], self.CFG["stagger_max_seconds"]
+        self.assertGreaterEqual(p1["juejin"], lo)
+        self.assertLessEqual(p1["csdn"], 2 * hi)
+
+    def test_mark_dispatched_keeps_ledger_intact(self):
+        state = {"version": 1, "seen": {"a/b": {"first_date": "2026-11-01", "platforms": {}}}}
+        sched.mark_dispatched(state, "2026-11-09")
+        self.assertEqual(state["schedule"]["last_dispatched"], "2026-11-09")
+        self.assertIn("a/b", state["seen"])
+        self.assertEqual(state["seen"]["a/b"]["first_date"], "2026-11-01")
 
 
 if __name__ == "__main__":
