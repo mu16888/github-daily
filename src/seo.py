@@ -74,11 +74,13 @@ def _topics_zh(repo: Repo, seo: dict) -> list[str]:
 def build(repo: Repo, date: str, seo: dict) -> dict[str, Any]:
     name = repo.full_name.split("/")[-1]
     hook = _hook(repo, seo)
-    desc_short = (repo.description or "仓库未填写简介").strip()[:60]
+    desc_short = (repo.description or "仓库没填简介").strip()[:60]
+    # 英文简介常自带句号，后面再补「。」会变成 ".。"，单独给一个去尾标点的版本
+    desc_lead = desc_short.rstrip(".。!！?？;；")
     kw = _topics_zh(repo, seo)
     vals = {
         "name": name, "language": repo.language, "hook": hook, "stars": repo.stars,
-        "license": repo.license, "desc_short": desc_short,
+        "license": repo.license, "desc_short": desc_short, "desc_lead": desc_lead,
     }
     # 用日期做确定性轮换：同一天所有平台用同一变体，跨天自动换样式
     variant = int(date.replace("-", "")) if date.replace("-", "").isdigit() else 0
@@ -96,10 +98,9 @@ def build(repo: Repo, date: str, seo: dict) -> dict[str, Any]:
         for item in seo.get("faq", [])
     ]
     lead = (
-        f"本文先讲 **{name}** 解决什么问题（引用 README 原文，未写明则如实标注），"
-        f"再介绍核心功能、安装教程与使用方法，适合想先判断对不对口、再决定要不要装的 {repo.language} 开发者。"
-        + (f"涉及领域：{'、'.join(kw)}。" if kw else "")
-        + "文中安装命令逐字摘自 README 原文，star 数与许可证取自 GitHub API。"
+        f"{name} 在 GitHub 上给自己的简介是「{desc_lead}」，{hook}。"
+        + (f"仓库标签里有 {'、'.join(kw)}。" if kw else "")
+        + "要不要装，先看它解决什么问题跟你对不对得上。"
     )
     return {
         "titles": titles,
