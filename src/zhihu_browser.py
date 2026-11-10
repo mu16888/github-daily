@@ -144,7 +144,10 @@ class ZhihuBrowserPublisher:
         events: list[dict[str, Any]] = []
 
         try:
-            ctx = self._launch(headless=False)
+            # 云端 Linux runner 无显示器，必须 headless=True；
+            # 本机调试可设 ZHIHU_HEADLESS=false 走有头模式看交互。
+            headless = os.environ.get("ZHIHU_HEADLESS", "true").lower() not in ("false", "0", "no")
+            ctx = self._launch(headless=headless)
             page = ctx.pages[0] if ctx.pages else ctx.new_page()
 
             def on_resp(r):
@@ -273,7 +276,10 @@ class ZhihuBrowserPublisher:
             return Result(self.name, "published" if ok else "failed",
                           url=link, detail=detail)
         except Exception as e:
-            return Result(self.name, "failed", detail=f"{type(e).__name__}: {e}")
+            # 把 ; 和 = 替换成空格，既避免触发整段脱敏（cookie/请求头分隔符），
+            # 又能保留异常类型与关键信息，便于云端排查真因。
+            safe = re.sub(r"[;=]", " ", str(e))[:200]
+            return Result(self.name, "failed", detail=f"{type(e).__name__}: {safe}")
         finally:
             self.close()
 
