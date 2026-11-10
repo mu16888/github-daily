@@ -44,6 +44,16 @@ zhihu:
   standing_consent: true
   creation_statement: ''
 
+platforms:
+  csdn:
+    # 2026-11-11 暂时停用 CSDN 云端直发，原因两条：
+    #   1) saveArticle 返回 code=200「成功」但文章不落库、额度也不扣 —— 那是假成功。
+    #      若继续跑，台账会把它记成「已发」，导致明天真正的稿子被去重跳过（真漏发）。
+    #   2) 真正能公开发布的是「浏览器面板 + 封面」路径（2026-11-11 手动发一篇已验证成功），
+    #      但封面上传还没自动化（file input 上传不响应），需要先抓包拿上传接口。
+    # 恢复条件：浏览器通道搬上云端（chromium + cookie 注入 + 封面图）后改回 true。
+    enabled: false
+
 browser:
   # 云端是 Linux runner，没有 msedge —— channel 留空表示用 Playwright 自带 chromium。
   # profile_dir 是 runner 上的临时目录，每次跑都是干净上下文，靠 ZHIHU_COOKIE 注入登录态。

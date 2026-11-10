@@ -163,6 +163,12 @@ def platform_view(article: dict, platform: str, source: str) -> dict:
 def run(args: argparse.Namespace) -> dict[str, Any]:
     settings = load_settings(getattr(args, "profile", None))
     platforms = load_yaml(ROOT / "config" / "platforms.yaml")
+    # profile 可覆盖平台开关（例：云端临时停用某个平台）。
+    # platforms.yaml 是独立加载的、不走 settings 的深度合并，所以这里显式套一次。
+    for _pname, _pover in (settings.get("platforms") or {}).items():
+        _tgt = (platforms.get("platforms") or {}).get(_pname)
+        if isinstance(_pover, dict) and isinstance(_tgt, dict):
+            _tgt.update(_pover)
     if args.dry_run:
         settings["publish"]["dry_run"] = True
     if args.no_publish:
