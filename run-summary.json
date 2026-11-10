@@ -1,21 +1,22 @@
 {
   "date": "2026-11-10",
   "picked": 1,
-  "dry_run": true,
+  "dry_run": false,
   "publish_enabled": true,
+  "content_source": "legacy",
   "quota": {
     "zhihu": 1,
     "juejin": 1,
-    "csdn": 1
+    "csdn": 2
   },
   "drafts": [
     {
       "repo": "ccch1mneyyy/dsh-Go",
       "title": "dsh-Go 解决什么问题？功能、安装与上手",
       "platform_titles": {
-        "zhihu": "dsh-Go 解决什么问题？17959 Star 的开源项目，附安装与上手",
-        "juejin": "dsh-Go 解决什么问题？17959 Star 的开源项目，附完整安装命令",
-        "csdn": "dsh-Go 解决什么问题？17959 Star 的开源项目，功能与安装教程"
+        "zhihu": "dsh-Go 解决什么问题？18445 Star 的开源项目，附安装与上手",
+        "juejin": "dsh-Go 解决什么问题？18445 Star 的开源项目，附完整安装命令",
+        "csdn": "dsh-Go 解决什么问题？18445 Star 的开源项目，功能与安装教程"
       },
       "keywords": [
         "大模型"
@@ -24,34 +25,51 @@
       "files": [
         "drafts/2026-11-10/ccch1mneyyy__dsh-Go.md",
         "drafts/2026-11-10/ccch1mneyyy__dsh-Go.html"
-      ]
+      ],
+      "content_source": "legacy",
+      "topic": {
+        "id": "judgement_first",
+        "hook_type": "判断 / 冲突",
+        "opening_index": 0,
+        "sections": [
+          "judgement",
+          "what",
+          "boundary",
+          "first_step",
+          "takeaway",
+          "labels"
+        ],
+        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
+        "date": "2026-11-10"
+      },
+      "rewrite_guard_ok": true
     }
   ],
   "publish": [
     {
       "platform": "zhihu",
-      "status": "skipped",
+      "status": "failed",
       "url": "",
-      "detail": "知乎无可用通道：缺 ZHIHU_APP_KEY/APP_SECRET（官方 OpenAPI）与 ZHIHU_COOKIE（网页会话），或 zhihu.mode=off；按约定跳过，不假报成功",
+      "detail": "[redacted] 原始消息疑似含完整请求头或 Cookie，已整体脱敏（不写入公开文件）",
       "http_status": null
     },
     {
       "platform": "juejin",
-      "status": "dry_run",
+      "status": "published",
       "url": "",
-      "detail": "已组装掘金草稿请求（https://api.juejin.cn/content_api/v1/article_draft/create?aid=2608&uuid=***&spider=0，3463 字符），未发送",
-      "http_status": null
+      "detail": "draft_id=7706384412187541542 | http=200 | publish code=0 msg=success",
+      "http_status": 200
     },
     {
       "platform": "csdn",
-      "status": "dry_run",
+      "status": "failed",
       "url": "",
-      "detail": "已组装请求（https://bizapi.csdn.net/blog-console-api/v3/mdeditor/saveArticle，正文 8422 字符），未实际发送",
-      "http_status": null
+      "detail": "http=401 code=401 msg=请登录后操作！",
+      "http_status": 401
     }
   ],
-  "published_count": 0,
+  "published_count": 1,
   "drafted_count": 0,
-  "skipped_count": 1,
-  "failed_count": 0
+  "skipped_count": 0,
+  "failed_count": 2
 }

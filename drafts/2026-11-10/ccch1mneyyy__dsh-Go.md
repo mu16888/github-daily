@@ -1,6 +1,6 @@
 # dsh-Go 解决什么问题？功能、安装与上手
 
-dsh-Go 在 GitHub 上给自己的简介是「dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑」，17959 Star 的开源项目。仓库标签里有 大模型。要不要装，先看它解决什么问题跟你对不对得上。
+dsh-Go 在 GitHub 上给自己的简介是「dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑」，18445 Star 的开源项目。仓库标签里有 大模型。要不要装，先看它解决什么问题跟你对不对得上。
 
 ## 它解决什么问题
 
@@ -27,7 +27,7 @@ dsh-Go 在 GitHub 上给自己的简介是「dsh-go — DeepSeek Harness 装进�
 
 > dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑。
 
-主要用 **Dart** 写，GitHub 上攒了 **17959** 颗星（就是收藏数），用的是 AGPL-3.0 协议。
+主要用 **Dart** 写，GitHub 上攒了 **18445** 颗星（就是收藏数），用的是 AGPL-3.0 协议。
 协议管的是你能不能拿去商用、改了要不要公开，用之前扫一眼。仓库地址：[ccch1mneyyy/dsh-Go](https://github.com/ccch1mneyyy/dsh-Go)。
 
 ## 能做什么
@@ -50,7 +50,7 @@ dsh-Go 在 GitHub 上给自己的简介是「dsh-go — DeepSeek Harness 装进�
 - 标了 AGPL-3.0 协议，用起来有规矩
 - 不用自己把源码做成软件
 - 不用另外配数据库、账号或者付费服务
-- 17959 颗星，不算冷门
+- 18445 颗星，不算冷门
 
 ## 安装教程
 
@@ -90,13 +90,13 @@ DSH_BETA_TOKEN_FILE= bash tooling/build-apk.sh -f arm64 --keep-daemon
 | 项目 | 内容 |
 | --- | --- |
 | 仓库 | [ccch1mneyyy/dsh-Go](https://github.com/ccch1mneyyy/dsh-Go) |
-| 收藏数 | 17959 |
+| 收藏数 | 18445 |
 | 主要用什么写 | Dart |
 | 开源协议 | AGPL-3.0 |
 | 标签 | ai-agent、android、android-app、coding-agent、deepseek、deepseek-harness、dsh、dsh-plugin |
 | 创建时间 | 2026-10-25 |
 | 最近更新 | 2026-11-10 |
-| 数据记于 | 2026-11-10T07:04:11+00:00 |
+| 数据记于 | 2026-11-10T14:45:31+00:00 |
 
 ## 动手前留意
 

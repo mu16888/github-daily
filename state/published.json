@@ -14,11 +14,21 @@
           "status": "published"
         }
       }
+    },
+    "ccch1mneyyy/dsh-Go": {
+      "first_date": "2026-11-10",
+      "platforms": {
+        "juejin": {
+          "url": "",
+          "at": "2026-11-10T14:48:41+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
     "last_dispatched": "2026-11-10",
-    "last_mode": "dry_run",
+    "last_mode": "live",
     "history": [
       "2026-11-09",
       "2026-11-09",
@@ -26,6 +36,7 @@
       "2026-11-09",
       "2026-11-09",
       "2026-11-09",
+      "2026-11-10",
       "2026-11-10"
     ]
   }
