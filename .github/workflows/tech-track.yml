@@ -1,0 +1,108 @@
+name: tech-track
+
+# 赛道 A（AI 科技）云端自动化：掘金 / CSDN / 知乎。
+#
+# 与 daily.yml 的分工：
+#   daily.yml      旧流水线，跑 src/main.py（默认 profile），保留作为回退
+#   tech-track.yml 本流水线，跑 src/main.py --profile cloud（真发 + 赛道 A 三平台）
+#
+# 触发：与 daily.yml 相同的 cron 节奏（每 15 分钟醒一次），
+#       由 src/schedule.py 的时间闸门决定当天唯一那一棒是否放行。
+#       两个 workflow 共享同一份 schedule.last_dispatched 台账，所以不会重复发文。
+
+on:
+  schedule:
+    - cron: '8,23,38,53 0-3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '只组装请求，不真发'
+        type: boolean
+        default: false
+      force:
+        description: '忽略时间闸门立即运行'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+# 与 daily.yml 同一个 concurrency 组：两个 workflow 不会同时跑，避免撞额度
+concurrency:
+  group: daily-github-picks
+  cancel-in-progress: false
+
+jobs:
+  tech:
+    runs-on: ubuntu-latest
+    # 装 Chromium + 错峰等待，最长约 45 分钟
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          # 知乎浏览器通道需要 Playwright + Chromium（云端 Linux runner 没有 msedge）
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Human-like timing gate
+        id: gate
+        env:
+          SCHEDULE_FORCE: ${{ inputs.force && 'true' || 'false' }}
+        run: |
+          ARGS="--check --align"
+          if [ "$SCHEDULE_FORCE" = "true" ]; then ARGS="$ARGS --force"; fi
+          python -m src.schedule $ARGS
+
+      - name: Offline unit tests
+        if: steps.gate.outputs.run == 'true'
+        run: python -m unittest discover -s tests
+
+      - name: Run pipeline (cloud profile)
+        if: steps.gate.outputs.run == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # 赛道 A 三平台凭据
+          JUEJIN_COOKIE: ${{ secrets.JUEJIN_COOKIE }}
+          JUEJIN_UUID: ${{ secrets.JUEJIN_UUID }}
+          CSDN_COOKIE: ${{ secrets.CSDN_COOKIE }}
+          ZHIHU_COOKIE: ${{ secrets.ZHIHU_COOKIE }}
+          # 知乎官方 OpenAPI（当前 auth_state=common_user 还没开放，先占位）
+          ZHIHU_APP_KEY: ${{ secrets.ZHIHU_APP_KEY }}
+          ZHIHU_APP_SECRET: ${{ secrets.ZHIHU_APP_SECRET }}
+          PIPELINE_DRY_RUN: ${{ inputs.dry_run || 'false' }}
+        run: |
+          if [ "$PIPELINE_DRY_RUN" = "true" ]; then
+            python -m src.main --profile cloud --dispatched --dry-run
+          else
+            python -m src.main --profile cloud --dispatched
+          fi
+
+      # 台账与成稿要提交回仓库：跨天去重依赖它，CI 不提交就会重复发同一篇
+      - name: Commit drafts and state
+        if: always() && steps.gate.outputs.run == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add drafts state run-summary.json
+          if git diff --staged --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "chore(tech-track): daily picks $(date -u +%F)"
+            git push
+          fi
+
+      - name: Upload run summary
+        if: always() && steps.gate.outputs.run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: tech-track-summary-${{ github.run_id }}
+          path: run-summary.json
+          if-no-files-found: ignore
