@@ -1,2 +1,6 @@
 requests>=2.31,<3
 PyYAML>=6.0,<7
+
+# 知乎浏览器通道（云端 tech-track 用）。
+# 本机跑赛道 A 时不需要它——本机走 local.py 的浏览器发布器，走 msedge。
+playwright>=1.40

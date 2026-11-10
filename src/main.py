@@ -33,6 +33,38 @@ def load_yaml(path: Path) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
 
 
+def _deep_merge(base: dict, over: dict) -> dict:
+    """递归合并配置覆盖项（over 优先）。
+
+    云端与本机要跑同一套代码但参数不同（云端真发、本机演练），
+    所以用「基础配置 + profile 覆盖」而不是维护两套完整配置。
+    """
+    out = dict(base)
+    for k, v in (over or {}).items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def load_settings(profile: str | None = None) -> dict:
+    """加载运行参数。
+
+    profile 非空时，额外加载 config/profiles/<profile>.yaml 做覆盖，
+    这样「云端真发」和「本机演练」共用一套代码，不互相污染。
+    """
+    settings = load_yaml(ROOT / "config" / "settings.yaml")
+    if profile:
+        p = ROOT / "config" / "profiles" / f"{profile}.yaml"
+        if p.exists():
+            settings = _deep_merge(settings, load_yaml(p))
+            print(f"[config] 已套用 profile: {profile} ({p.relative_to(ROOT)})")
+        else:
+            print(f"[config] profile 不存在，忽略: {profile}")
+    return settings
+
+
 def load_state() -> dict:
     if STATE_FILE.exists():
         try:
@@ -129,7 +161,7 @@ def platform_view(article: dict, platform: str, source: str) -> dict:
 
 
 def run(args: argparse.Namespace) -> dict[str, Any]:
-    settings = load_yaml(ROOT / "config" / "settings.yaml")
+    settings = load_settings(getattr(args, "profile", None))
     platforms = load_yaml(ROOT / "config" / "platforms.yaml")
     if args.dry_run:
         settings["publish"]["dry_run"] = True
@@ -248,9 +280,11 @@ def main() -> int:
     ap.add_argument("--no-publish", action="store_true", help="完全跳过发布层，只出稿")
     ap.add_argument("--dispatched", action="store_true",
                     help="CI 闸门放行的当日一棒：写 schedule.last_dispatched，防止重复派发")
+    ap.add_argument("--profile", default=None,
+                    help="配置档名：加载 config/profiles/<name>.yaml 做覆盖（云端用 cloud）")
     args = ap.parse_args()
     if args.limit is None:
-        args.limit = int(load_yaml(ROOT / "config" / "settings.yaml")["daily"]["picks_per_day"])
+        args.limit = int(load_settings(args.profile)["daily"]["picks_per_day"])
     try:
         s = run(args)
     except Exception as e:

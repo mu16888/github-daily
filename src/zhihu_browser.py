@@ -14,6 +14,7 @@
 """
 from __future__ import annotations
 
+import os
 import re
 import time
 from pathlib import Path
@@ -41,15 +42,53 @@ class ZhihuBrowserPublisher:
     def _launch(self, headless: bool = True):
         from playwright.sync_api import sync_playwright
         self._pw = sync_playwright().start()
-        self._ctx = self._pw.chromium.launch_persistent_context(
-            user_data_dir=str(self._profile_dir()),
-            channel=str(self.browser_cfg.get("channel", "msedge")),
-            headless=headless,
-            args=["--disable-blink-features=AutomationControlled"],
-            viewport={"width": 1440, "height": 900},
-            locale="zh-CN",
-        )
+        # channel: 云端（Linux runner）用自带的 chromium，本机用 msedge。
+        # 配置里 channel 写成空字符串表示「用 Playwright 自带浏览器」。
+        channel = str(self.browser_cfg.get("channel", "msedge") or "").strip()
+        launch_kw: dict[str, Any] = {
+            "user_data_dir": str(self._profile_dir()),
+            "headless": headless,
+            "args": ["--disable-blink-features=AutomationControlled"],
+            "viewport": {"width": 1440, "height": 900},
+            "locale": "zh-CN",
+        }
+        if channel:
+            launch_kw["channel"] = channel
+        self._ctx = self._pw.chromium.launch_persistent_context(**launch_kw)
+        self._inject_cookies(self._ctx)
         return self._ctx
+
+    def _inject_cookies(self, ctx) -> None:
+        """云端没有本地登录态：把环境变量里的 Cookie 注入浏览器上下文。
+
+        本机走扫码登录，profile 里已有登录态，不需要注入；
+        云端每次跑都从 secrets 取 ZHIHU_COOKIE 注入（知乎 Cookie 有效期 ≤4h，
+        所以云端需要每天重跑时重新注入一份新鲜的）。
+        """
+        raw = (os.environ.get("ZHIHU_COOKIE") or "").strip()
+        if not raw:
+            return
+        cookies = []
+        for part in raw.split(";"):
+            part = part.strip()
+            if not part or "=" not in part:
+                continue
+            name, _, value = part.partition("=")
+            name = name.strip()
+            if not name:
+                continue
+            cookies.append({
+                "name": name,
+                "value": value.strip(),
+                "domain": ".zhihu.com",
+                "path": "/",
+            })
+        if cookies:
+            try:
+                ctx.add_cookies(cookies)
+                print(f"[zhihu] 已注入 {len(cookies)} 个 Cookie（云端登录态）")
+            except Exception as e:
+                print(f"[zhihu] Cookie 注入失败：{type(e).__name__}: {e}")
 
     def close(self) -> None:
         try:

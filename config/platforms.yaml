@@ -94,10 +94,15 @@ platforms:
     body_format: both                  # content=HTML，markdowncontent=原始 Markdown
     payload_static:
       readType: public
-      status: 0
+      # 2026-11-10 实测修正：
+      #   status=2 → 只建草稿，接口回 200 但文章永不公开（404）
+      #   status=1 → **公开发布**，接口回 200「成功」
+      #   status=0 → 走额度校验分支，额度满时 400「今天发表文章数量已达到限制的2篇」
+      # 直发用 status=1；免费号每天 2 篇。
+      status: 1
       source: pc_mdeditor
       type: original
       pubStatus: publish
     success_rule: 'response JSON code == 200'
     secrets: [CSDN_COOKIE]
-    note: '签名串的空行与换行必须逐字一致；响应结构未经本账号实测。'
+    note: '签名串的空行与换行必须逐字一致；2026-11-10 实测 status=1 可直接公开发布，额度满时返回 400300011。'

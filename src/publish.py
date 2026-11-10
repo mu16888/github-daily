@@ -20,10 +20,15 @@ import re
 import time
 import uuid
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
 import requests
+
+
+# 仓库根目录（云端运行时用它定位浏览器 profile 等本机路径）
+ROOT = Path(__file__).resolve().parent.parent
 
 
 # --------------------------------------------------------------------------- #
@@ -604,6 +609,16 @@ class CsdnPublisher(BasePublisher):
         # 关键点：status=2、pubStatus=draft、not_auto_saved="1"（字符串）、
         # authorized_status=false（布尔）、is_new=1（数字）、creation_statement=0、
         # categories=""（字符串，不是数组）、cover_type=1。
+        #
+        # 2026-11-10 晚修正（实测结论，之前判断错了）：
+        #   status=2 → 建草稿，接口返回成功但文章永远 404（从未公开发布）
+        #   status=1 → **公开发布**，实测返回 code=200「成功」
+        #   status=0 + pubStatus=publish → 400「今天发表文章数量已达到限制的2篇」
+        #     （说明 status=0 走的才是额度校验分支；status=1 绕过了它）
+        # 因此直发必须用 status=1。免费号每天 2 篇，额度用完时返回 400300011。
+        ps = dict(c.get("payload_static") or {})
+        publish_status = int(ps.get("status", 2))
+        pub_status = str(ps.get("pubStatus", "draft"))
         body = {
             "title": self.title(article),
             "markdowncontent": article["markdown"],
@@ -622,8 +637,8 @@ class CsdnPublisher(BasePublisher):
             "is_new": 1,
             "vote_id": 0,
             "resource_id": "",
-            "status": 2,
-            "pubStatus": "draft",
+            "status": publish_status,
+            "pubStatus": pub_status,
             "creation_statement": 0,
             "creator_activity_id": "",
         }
@@ -632,12 +647,17 @@ class CsdnPublisher(BasePublisher):
     def judge(self, resp: requests.Response) -> tuple[bool, str, str]:
         data = _json(resp)
         code = data.get("code")
+        msg = str(data.get("msg") or data.get("message") or "")
         # 业务码与 HTTP 状态都必须是 200：网关/WAF 拦截页有时也会带一个 JSON 体，
         # 只看 code 会把失败当成发布成功。
         ok = resp.status_code == 200 and code in (200, "200")
         d = data.get("data") or {}
         link = str(d.get("url") or "") if isinstance(d, dict) else ""
-        return ok, link, f"http={resp.status_code} code={code!r} msg={str(data.get('msg') or data.get('message') or '')[:120]}"
+        # 额度用完是可预期的业务态，不是程序故障：如实说明「今日额度已用尽」，
+        # 让上层知道「等明天」而不是无脑重试（重试只会一直撞同一堵墙）。
+        if not ok and ("数量已达到限制" in msg or "达到限制" in msg or "限制的" in msg):
+            return False, "", f"今日发文额度已用尽（{msg[:80]}），需次日重置"
+        return ok, link, f"http={resp.status_code} code={code!r} msg={msg[:120]}"
 
 
 def all_publishers(platforms_cfg: dict, settings: dict) -> list[BasePublisher]:
@@ -650,6 +670,61 @@ def all_publishers(platforms_cfg: dict, settings: dict) -> list[BasePublisher]:
     out = []
     for name, cls in mapping.items():
         cfg = platforms_cfg["platforms"].get(name, {})
-        if cfg.get("enabled", False):
-            out.append(cls(cfg, settings, secrets, dry))
+        if not cfg.get("enabled", False):
+            continue
+        # 知乎「浏览器通道」：纯 HTTP 的 web 通道依赖 x-zse-96 签名，实测已失效；
+        # 浏览器通道由页面自己算签名，是 2026-11-10 实测发布成功的唯一路径。
+        # 云端（settings.zhihu.mode=browser）走这条；本机默认仍走原有通道。
+        if name == "zhihu" and str(
+            (settings.get("zhihu") or {}).get("mode", "")
+        ).lower() == "browser":
+            out.append(_ZhihuBrowserAdapter(cfg, settings, secrets, dry))
+            continue
+        out.append(cls(cfg, settings, secrets, dry))
     return out
+
+
+class _ZhihuBrowserAdapter(BasePublisher):
+    """把知乎浏览器通道包装成标准发布器接口（供云端 all_publishers 装配）。
+
+    为什么不直接用 src/zhihu_browser.py：那个类不继承 BasePublisher，
+    而 all_publishers 需要统一的 publish() -> Result 接口，才能复用
+    配额闸门、错峰、失败不中断和台账回写。
+    """
+
+    name = "zhihu"
+
+    def __init__(self, cfg: dict, settings: dict, secrets: dict, dry_run: bool):
+        super().__init__(cfg, settings, secrets, dry_run)
+        self._impl = None
+
+    def required(self) -> list[str]:
+        return ["ZHIHU_COOKIE"]
+
+    def publish(self, article: dict) -> Result:
+        if self.dry_run:
+            return Result(self.name, "dry_run",
+                          detail="知乎浏览器通道：云端需装 Playwright + Chromium，"
+                                 "dry_run 不启动浏览器")
+        if not (self.secrets.get("ZHIHU_COOKIE") or "").strip():
+            return Result(self.name, "skipped", detail="缺少 Secrets: ZHIHU_COOKIE")
+        try:
+            from .zhihu_browser import ZhihuBrowserPublisher
+        except Exception as e:
+            return Result(self.name, "failed",
+                          detail=f"无法加载知乎浏览器发布器（缺 playwright？）：{type(e).__name__}")
+        bcfg = dict((self.settings.get("browser") or {}))
+        # 云端是 Linux runner，用 Playwright 自带的 chromium（channel 留空）；
+        # 本机默认 msedge。
+        bcfg.setdefault("channel", "")
+        pub = ZhihuBrowserPublisher(browser_cfg=bcfg, root=ROOT)
+        try:
+            return pub.publish_browser(
+                article,
+                title=self.title(article),
+                body=article.get("markdown", ""),
+                brief=self.brief(article),
+                tags=self.tags(article),
+            )
+        except Exception as e:
+            return Result(self.name, "failed", detail=f"{type(e).__name__}: {e}")

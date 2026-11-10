@@ -389,14 +389,18 @@ class TestCsdnSignature(unittest.TestCase):
     def test_csdn_body_matches_web_editor_fields(self):
         """请求体字段与类型必须和 CSDN 网页编辑器完全一致，否则 400。
 
-        2026-11-10 从浏览器真实请求抓取校对。
+        2026-11-10 从浏览器真实请求抓取校对；当晚实测修正发布态：
+          status=2 → 只建草稿，接口回 200 但文章永不公开（404）
+          status=1 → 公开发布，接口回 200「成功」
+        所以直发必须 status=1 + pubStatus=publish。
         """
         pub = CsdnPublisher(PLATFORMS["platforms"]["csdn"], SETTINGS,
                             {"CSDN_COOKIE": "a=1"}, dry_run=False)
         _u, _h, b = pub.build({"title": "t", "html": "<p>x</p>",
                                "markdown": "# t", "brief": "b"})
-        self.assertEqual(b["status"], 2)              # 2 才是草稿态，0 是错的
-        self.assertEqual(b["pubStatus"], "draft")
+        # 发布态：1 = 公开发布（2 是草稿，接口虽回 200 但文章永不公开）
+        self.assertEqual(b["status"], 1)
+        self.assertEqual(b["pubStatus"], "publish")
         self.assertEqual(b["not_auto_saved"], "1")     # 字符串，不是布尔
         self.assertIs(b["authorized_status"], False)   # 布尔，不是 1
         self.assertEqual(b["is_new"], 1)               # 数字，不是 True
@@ -407,6 +411,32 @@ class TestCsdnSignature(unittest.TestCase):
         self.assertEqual(b["source"], "pc_mdeditor")
         self.assertEqual(b["type"], "original")
         self.assertEqual(b["readType"], "public")
+
+    def test_csdn_publish_status_comes_from_config(self):
+        """status/pubStatus 必须从 platforms.yaml 读，改配置即可切换草稿/直发。"""
+        import copy
+        cfg = copy.deepcopy(PLATFORMS["platforms"]["csdn"])
+        cfg["payload_static"] = dict(cfg.get("payload_static") or {})
+        cfg["payload_static"]["status"] = 2
+        cfg["payload_static"]["pubStatus"] = "draft"
+        pub = CsdnPublisher(cfg, SETTINGS, {"CSDN_COOKIE": "a=1"}, dry_run=False)
+        _u, _h, b = pub.build({"title": "t", "html": "<p>x</p>",
+                               "markdown": "# t", "brief": "b"})
+        self.assertEqual(b["status"], 2)
+        self.assertEqual(b["pubStatus"], "draft")
+
+    def test_csdn_quota_exhausted_is_reported_clearly(self):
+        """额度用完是预期业务态，要明确说「额度已用尽」，不能含糊成一般失败。"""
+        import requests as _rq
+        pub = CsdnPublisher(PLATFORMS["platforms"]["csdn"], SETTINGS,
+                            {"CSDN_COOKIE": "a=1"}, dry_run=False)
+        resp = _rq.Response()
+        resp.status_code = 400
+        resp._content = ('{"code":400300011,"msg":"今天发表文章数量已达到限制的2篇。"}'
+                         ).encode("utf-8")
+        ok, _url, detail = pub.judge(resp)
+        self.assertFalse(ok)
+        self.assertIn("额度", detail)
 
     def test_csdn_cookie_is_normalized_before_use(self):
         pub = CsdnPublisher(PLATFORMS["platforms"]["csdn"], SETTINGS,

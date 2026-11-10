@@ -1,0 +1,56 @@
+# 云端运行档（GitHub Actions）
+#
+# 用途：赛道 A（AI 科技）上云端自动化 —— 掘金 / CSDN / 知乎。
+# 本机（config/settings.yaml）保持 dry_run=true 做演练，两边互不污染。
+#
+# 用法：python -m src.main --profile cloud --dispatched
+# 由 src/main.py 的 load_settings() 深度合并到 settings.yaml 之上。
+
+publish:
+  # 云端是真发。本机档案仍是 true，两边不互相改。
+  dry_run: false
+  enabled: true
+  content_source: legacy
+
+daily:
+  # 云端一天 1 篇，三平台各发同一篇（同一稿多投，不是三篇不同稿）
+  picks_per_day: 1
+
+quota:
+  per_day:
+    # 2026-11-10 实测修正：
+    #   掘金 1 篇/天，第 2 篇会 err_no:0 却不进文章列表（静默失效）
+    juejin: 1
+    # CSDN 免费号实测「每天 2 篇」（错误文案：今天发表文章数量已达到限制的2篇）
+    csdn: 2
+    # 知乎：走浏览器通道。网页端实测是「距上一篇 ≥24h」的滚动限流，
+    # 但官方 zhihu-sync 文档写的是每人每天最多 50 次。取更严的那个。
+    zhihu: 1
+  model: calendar_day
+
+zhihu:
+  # 云端走「浏览器通道」。
+  # 原因一：官方 OpenAPI 需要 ZHIHU_OPENAPI_APP_SECRET，而知乎后台返回
+  #   auth_state=common_user / bind_status=unbind —— 定向开放授权还没到本账号，
+  #   拿不到密钥（实测 401 AuthenticationError，签名算法与 body 结构均已核对无误）。
+  # 原因二：纯 HTTP 的 web 通道依赖 x-zse-96 签名，实测老接口已 404。
+  # 浏览器通道由页面自己算签名，是 2026-11-10 实测发布成功的唯一路径。
+  # 等授权下来了把 mode 改成 'openapi' 即可，代码无需改动。
+  mode: 'browser'
+  # 全自动发布（走浏览器自己算 x-zse-96 签名）
+  web_auto_publish: true
+  # 知乎官方规范要求「用户确认预览后」才能发 confirmed:true。
+  # 这里用仓库所有者的长期授权：改 true 即代表你已确认默认发布参数。
+  standing_consent: true
+  creation_statement: ''
+
+browser:
+  # 云端是 Linux runner，没有 msedge —— channel 留空表示用 Playwright 自带 chromium。
+  # profile_dir 是 runner 上的临时目录，每次跑都是干净上下文，靠 ZHIHU_COOKIE 注入登录态。
+  channel: ''
+  profile_dir: 'state/browser-profile'
+
+schedule:
+  # 云端错峰：三个平台之间的间隔要比本机长一点，降低同 IP 密集发文的风控概率
+  stagger_min_seconds: 180
+  stagger_max_seconds: 600
