@@ -12,6 +12,7 @@ from typing import Any
 
 from .discover import Repo, _drop_trailing_fragment
 from .seo import build as seo_build, load_seo
+from .tones import render_all
 
 
 def md_to_html(md: str) -> str:
@@ -237,6 +238,25 @@ def compose(repo: Repo, date: str, cfg: dict, seo: dict | None = None) -> dict[s
 {name} 还在改，装之前记得翻一眼仓库说明。
 """
 
+    # 五平台调性稿是附加产物：渲染层出任何问题都不阻断原有出稿 / 发布链路。
+    try:
+        articles = render_all(repo, date, s, seo)
+        articles_error = ""
+    except Exception as exc:
+        articles = {}
+        articles_error = f"{type(exc).__name__}: {exc}"
+
+    # 新结构稿（话题层）：同样是附加产物。默认发布链路不读它，
+    # 只有 settings.publish.content_source=rewrite 时 main.py 才会切成平台视图。
+    try:
+        from .rewrite import render_rewrite
+        rw = render_rewrite(repo, date, seo_cfg=seo)
+        rewrite, topic, rewrite_guard = rw["articles"], rw["topic"], rw["guard"]
+        rewrite_error = ""
+    except Exception as exc:
+        rewrite, topic, rewrite_guard = {}, {}, {}
+        rewrite_error = f"{type(exc).__name__}: {exc}"
+
     return {
         "repo": repo.full_name,
         "date": date,
@@ -249,4 +269,10 @@ def compose(repo: Repo, date: str, cfg: dict, seo: dict | None = None) -> dict[s
         "tags": s["csdn_tags"],
         "platform_tags": {"csdn": s["csdn_tags"]},
         "keywords": s["keywords"],
+        "articles": articles,            # 五平台各自的标题 / 导语 / 正文
+        "articles_error": articles_error,
+        "rewrite": rewrite,              # 新结构五平台稿（默认不发布）
+        "rewrite_error": rewrite_error,
+        "rewrite_guard": rewrite_guard,  # 8 字连续片段防洗稿校验
+        "topic": topic,                  # 当日选中的结构原型
     }

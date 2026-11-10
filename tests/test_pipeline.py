@@ -380,7 +380,11 @@ class TestCsdnSignature(unittest.TestCase):
             str(cfg["ca_sign_secret"]).encode(), to_sign.encode(), hashlib.sha256
         ).digest()).decode()
         self.assertEqual(headers["x-ca-signature"], expected)
-        self.assertEqual(headers["content-type"], "application/json;charset=UTF-8")
+        # 2026-11-10 实测修正：CSDN 网关要求 content-type 必须是 application/json，
+        # 带 ;charset=UTF-8 时签名串与实际请求头不一致，网关会把路径重写成
+        # /phoenix/console/v3/... 并返回 400 Bad Request。
+        self.assertEqual(headers["content-type"], "application/json")
+        self.assertNotIn("charset", headers["content-type"].lower())
 
     def test_csdn_cookie_is_normalized_before_use(self):
         pub = CsdnPublisher(PLATFORMS["platforms"]["csdn"], SETTINGS,

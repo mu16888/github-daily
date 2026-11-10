@@ -1,0 +1,149 @@
+# 五平台调性配置：一个 FactPack -> 五份不同的标题 / 导语 / 正文
+#
+# 红线：所有句子只能来自 FactPack（README 原文 + GitHub REST API 字段）。
+# 差异只允许来自 切入点 / 结构顺序 / 信息取舍 / 句式 / 口吻 / 篇幅，
+# 不允许新增事实、体验、效果数字或第一人称经历。
+#
+# title_patterns 可用占位符：{name} {hook} {language} {stars} {license}
+#                {desc_lead} {topics_zh} {repo_url} {date}
+# lead_template 同样可用上述占位符。
+
+defaults:
+  section_titles:
+    problem: '它解决什么问题'
+    what: '这是个什么项目'
+    features: '能做什么'
+    signals: '新手装起来麻烦吗'
+    install: '安装命令'
+    usage: '装完怎么上手'
+    archive: '项目档案'
+    caveat: '动手前留意'
+    faq: '常见问题'
+  section_intros:
+    problem: ''
+    what: ''
+    features: ''
+    signals: '第一次上手最容易卡在两件事：要不要自己把源码做成能跑的软件，说明里有没有现成命令。'
+    install: ''
+    usage: ''
+    archive: ''
+    caveat: ''
+    faq: ''
+
+platforms:
+
+  zhihu:
+    title_max: 50
+    title_patterns:
+      - '{name} 值不值得花时间装：先看它解决什么'
+      - '{name}：{hook}，先弄清它解决什么'
+    lead_template: '{name} 在 GitHub 上给自己的简介是「{desc_lead}」。{hook}。值不值得花时间装，得看它解决的事跟你对不对得上。'
+    section_order: [problem, what, features, signals, install, usage, archive, caveat, faq]
+    section_titles:
+      problem: '问题出在哪'
+      what: '它到底是什么'
+      features: '具体能做的事'
+      signals: '上手会不会卡住'
+      install: '怎么装'
+      usage: '装完跑一遍'
+      archive: '能查到的事实'
+      caveat: '边界在哪'
+      faq: '常被问到的'
+    section_intros:
+      problem: '先看作者自己怎么说的。'
+      features: ''
+    keep: [code, table, faq, signals, archive]
+    ending: '{name} 还在改，判断之前记得翻一眼仓库说明。'
+    length_hint: [1000, 2200]
+
+  juejin:
+    title_max: 80
+    title_patterns:
+      - '{name} 怎么用：{hook}，附完整安装命令'
+      - '{name} 使用与安装：{hook}，命令可直接复制'
+    lead_template: '{name} 主要用 {language} 写，{hook}。说明里有 Quick Start 和现成的安装命令。'
+    section_order: [what, features, install, usage, signals, caveat]
+    section_titles:
+      what: '能拿来做什么'
+      features: '功能清单'
+      install: '装'
+      usage: '跑起来'
+      signals: '容易卡的地方'
+      caveat: '动手前'
+    section_intros:
+      features: '说明里列的是这些。'
+      install: '命令是仓库说明里现成的，复制下来就能跑。'
+      usage: 'Quick Start（快速上手）那部分写了这些。'
+    keep: [code, signals]
+    ending: '{name} 还在改，装之前扫一眼仓库说明。用过的朋友评论区聊聊拿它做什么。'
+    length_hint: [700, 1600]
+
+  csdn:
+    title_max: 50
+    title_patterns:
+      - '{name} 安装教程：{language} 工具的功能与上手'
+      - '{name} 怎么用：安装步骤、功能说明与常见问题'
+    lead_template: '{name} 是给 {topics_zh} 这类活儿用的 {language} 工具，{hook}。'
+    section_order: [what, install, usage, features, archive, faq, caveat]
+    section_titles:
+      what: '适用情况与项目简介'
+      install: '安装步骤'
+      usage: '上手步骤'
+      features: '功能说明'
+      archive: '项目信息'
+      faq: '常见问题'
+      caveat: '注意事项'
+    section_intros:
+      install: '把说明里 Install 那段的命令复制下来跑一遍就行。'
+      usage: '装完之后按 Quick Start 走。'
+      archive: '这几项是仓库里能查到的。'
+    keep: [code, table, faq, archive]
+    ending: '项目还在更新，命令和版本以仓库说明为准。'
+    length_hint: [900, 2000]
+
+  wechat:
+    # 公众号标题按 UTF-8 字节算，中文 1 字 3 字节，约 21 字封顶
+    title_max_bytes: 64
+    brief_max_bytes: 120
+    title_patterns:
+      - '{hook}，这个开源项目把办法写清楚了'
+      - '{name}：{hook}'
+    lead_template: '{name} 是个用 {language} 写的开源工具，{hook}。'
+    section_order: [problem, what, features, install, caveat]
+    section_titles:
+      problem: '想解决什么麻烦'
+      what: '这是个什么'
+      features: '能做哪些事'
+      install: '怎么装'
+      caveat: '用之前'
+    section_intros:
+      problem: ''
+      what: ''
+      features: ''
+      install: ''
+      caveat: ''
+    keep: []
+    # 公众号读者不是技术人群：代码块、表格、档案表、FAQ 全部不进正文
+    ending: '{name} 还在改，真要装的话，去项目页面看一眼最新说明。'
+    length_hint: [400, 900]
+
+  toutiao:
+    # ≤30 字为第三方说法，待核实；这里按字符数保守控制
+    title_max: 30
+    title_patterns:
+      - '{hook}，GitHub 上有人做了个工具'
+      - '{name} 解决什么：{hook}'
+    lead_template: '{name}，{hook}。{language} 写的开源工具，GitHub 上 {stars} 人收藏。'
+    section_order: [what, problem, features, install, caveat]
+    section_titles:
+      what: '先说结论'
+      problem: '麻烦在哪'
+      features: '它能干什么'
+      install: '怎么装'
+      caveat: '一点提醒'
+    section_intros:
+      problem: ''
+      features: ''
+    keep: []
+    ending: '项目还在更新，以仓库说明为准。'
+    length_hint: [300, 700]

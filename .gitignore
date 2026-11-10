@@ -12,3 +12,14 @@ venv/
 csdn_config.json
 juejin_config.json
 .zhihu/
+
+# 本机凭据与本机运行产物（绝不进仓库）
+config/local_secrets.json
+!config/local_secrets.example.json
+state/local-ledger.json
+state/browser-profile/
+state/cover-cache/
+state/covers/
+state/*.png
+run-summary-local.json
+logs/

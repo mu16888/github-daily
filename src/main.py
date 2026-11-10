@@ -18,7 +18,7 @@ from typing import Any
 
 import yaml
 
-from .compose import compose
+from .compose import compose, md_to_html
 from .discover import _session, pick
 from .publish import Result, all_publishers, redact
 from .schedule import mark_dispatched, stagger_plan
@@ -91,6 +91,43 @@ def archive(article: dict, date: str) -> list[str]:
     return [str(md_path.relative_to(ROOT)), str(html_path.relative_to(ROOT))]
 
 
+def archive_rewrite(article: dict, date: str) -> list[str]:
+    """新结构稿按平台单独归档；只在 content_source=rewrite 时调用。"""
+    arts = article.get("rewrite") or {}
+    if not arts:
+        return []
+    folder = ROOT / "drafts" / date / "rewrite"
+    folder.mkdir(parents=True, exist_ok=True)
+    slug = article["repo"].replace("/", "__")
+    out = []
+    for platform, art in arts.items():
+        p = folder / f"{slug}.{platform}.md"
+        p.write_text(f"# {art['title']}\n\n> {art['brief']}\n\n{art['body']}\n",
+                     encoding="utf-8")
+        out.append(str(p.relative_to(ROOT)))
+    return out
+
+
+def platform_view(article: dict, platform: str, source: str) -> dict:
+    """把新结构稿映射成发布器已认识的字段，发布器代码一行不改。
+
+    legacy（默认）原样返回，保证旧链路与旧测试零影响。
+    """
+    if source != "rewrite":
+        return article
+    art = (article.get("rewrite") or {}).get(platform)
+    if not art:
+        return article
+    view = dict(article)
+    view["titles"] = {**article.get("titles", {}), platform: art["title"]}
+    view["briefs"] = {**article.get("briefs", {}), platform: art["brief"]}
+    if art.get("tags"):
+        view["platform_tags"] = {**article.get("platform_tags", {}), platform: art["tags"]}
+    view["markdown"] = art["body"]
+    view["html"] = md_to_html(art["body"])
+    return view
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     settings = load_yaml(ROOT / "config" / "settings.yaml")
     platforms = load_yaml(ROOT / "config" / "platforms.yaml")
@@ -121,8 +158,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
         STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
+    source = str(settings["publish"].get("content_source", "legacy")).strip().lower()
+    if source not in ("legacy", "rewrite"):
+        source = "legacy"
     publishers = all_publishers(platforms, settings) if settings["publish"]["enabled"] else []
-    print(f"[3/5] 启用 {len(publishers)} 个发布适配器 | dry_run={settings['publish']['dry_run']}")
+    print(f"[3/5] 启用 {len(publishers)} 个发布适配器 | dry_run={settings['publish']['dry_run']} | 正文={source}")
 
     try:
         schedule_date = dt.date.fromisoformat(args.date)
@@ -134,10 +174,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     for repo in repos:
         article = compose(repo, args.date, settings)
         files = archive(article, args.date)
+        if source == "rewrite":
+            files += archive_rewrite(article, args.date)
         drafts.append({
             "repo": repo.full_name, "title": article["title"],
             "platform_titles": article["titles"], "keywords": article["keywords"],
             "score": repo.score, "files": files,
+            "content_source": source,
+            "topic": article.get("topic", {}),
+            "rewrite_guard_ok": bool((article.get("rewrite_guard") or {}).get("ok", False)),
         })
         print(f"      成稿 {repo.full_name} (score={repo.score}) -> {files[0]}")
 
@@ -159,7 +204,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 if delay and not settings["publish"]["dry_run"]:
                     print(f"      平台错峰：等待 {delay}s 后发 {pub.name}")
                     time.sleep(delay)
-                r = pub.publish(article)
+                r = pub.publish(platform_view(article, pub.name, source))
             results.append(r.as_dict())
             print(f"      [{r.status:9s}] {r.platform}: {r.detail[:120]}")
             # drafted 也要占住当天名额：草稿虽未公开，但重复建同样会刷屏。
@@ -179,6 +224,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "picked": len(repos),
         "dry_run": bool(settings["publish"]["dry_run"]),
         "publish_enabled": bool(settings["publish"]["enabled"]),
+        "content_source": source,
         "quota": settings.get("quota", {}).get("per_day", {}),
         "drafts": drafts,
         "publish": results,

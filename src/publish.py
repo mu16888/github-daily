@@ -438,7 +438,14 @@ class ZhihuPublisher(BasePublisher):
 
     def _impl(self) -> BasePublisher | None:
         z = self.settings.get("zhihu", {})
-        mode = str(z.get("mode", "auto") or "auto").lower()
+        raw = z.get("mode", "auto")
+        # YAML 1.1 会把裸 off / on 解析成布尔值；兼容旧配置，别把 off 静默升级成 auto
+        if raw is False or str(raw).lower() in ("false", "off"):
+            mode = "off"
+        elif raw is True or str(raw).lower() in ("true", "on"):
+            mode = "auto"
+        else:
+            mode = str(raw or "auto").lower()
         if mode not in ("off", "openapi", "web", "auto"):
             mode = "auto"
         if mode == "off":
@@ -585,21 +592,40 @@ class CsdnPublisher(BasePublisher):
             "origin": c["origin"],
             "referer": c["referer"],
             "cookie": self.cookie("CSDN_COOKIE"),
-            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36",
+            "accept-language": "zh-CN",
             "x-ca-key": key,
             "x-ca-nonce": nonce,
             "x-ca-signature": sign,
             "x-ca-signature-headers": c["ca_signature_headers"],
         }
+        # 请求体字段与类型必须和 CSDN 网页编辑器完全一致，否则 400 Bad Request。
+        # 这些值是 2026-11-10 从浏览器真实请求里抓的（点一次「保存草稿」即抓到）。
+        # 关键点：status=2、pubStatus=draft、not_auto_saved="1"（字符串）、
+        # authorized_status=false（布尔）、is_new=1（数字）、creation_statement=0、
+        # categories=""（字符串，不是数组）、cover_type=1。
         body = {
-            **c["payload_static"],
             "title": self.title(article),
-            "content": article["html"],          # 必须是渲染后的 HTML
             "markdowncontent": article["markdown"],
-            "tags": self.tags(article),
+            "content": article["html"],
             "readType": self.settings["csdn"]["read_type"],
+            "level": 0,
+            "tags": self.tags(article),
+            "categories": "",
             "type": self.settings["csdn"]["article_type"],
-            "status": int(c["payload_static"]["status"]),
+            "original_link": "",
+            "authorized_status": False,
+            "not_auto_saved": "1",
+            "source": "pc_mdeditor",
+            "cover_images": [],
+            "cover_type": 1,
+            "is_new": 1,
+            "vote_id": 0,
+            "resource_id": "",
+            "status": 2,
+            "pubStatus": "draft",
+            "creation_statement": 0,
+            "creator_activity_id": "",
         }
         return f"{c['api_base']}{path}", headers, body
 

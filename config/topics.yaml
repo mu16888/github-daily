@@ -1,0 +1,139 @@
+# 话题层：把「高赞内容被验证过的结构」变成可复用的切入角度。
+#
+# 事实来源（发布者 / 统计时间 / 可打开链接）：
+#   掘金技术热榜公开接口（匿名只读），抓取时间 2026-11-10 00:25 +08:00
+#   https://api.juejin.cn/content_api/v1/content/article_rank?category_id=1&type=hot
+#   返回 50 条，逐条互动量见 research/hot_topics_2026-11-10.md。
+#
+# 口径（必须如实保留）：该榜是「当日新发文章实时热度」，不是全站历史爆款。
+#   50 条合计 赞 162 / 藏 151 / 评 61 / 阅 13598，单篇最高 赞 15 / 藏 19；
+#   藏 >= 赞 的有 22 条。所以「量大」只按同批相对高位 + 藏赞比理解，
+#   不能当绝对爆款量级对外引用。
+#
+# 红线：本文件只保存「可观察的结构特征」和**我们自己写的**白话句式。
+#   不保存原文正文、代码块、例句或观点。reference_titles 只作防洗稿校验基准，
+#   生成器绝不读它来造句。文章里的事实一律运行时从 GitHub REST API / README 原文取。
+
+meta:
+  captured_at: '2026-11-10 00:25 +08:00'
+  publisher: '掘金技术热榜（公开接口，匿名只读）'
+  source_url: 'https://api.juejin.cn/content_api/v1/content/article_rank?category_id=1&type=hot'
+  sample_size: 50
+  calibration_note: 'research/hot_topics_2026-11-10.md；当日新发热度，非历史爆款'
+
+# 防洗稿校验基准：Top 20 公开标题原文，仅用于 8 字连续片段比对，不参与生成。
+# 与 research/hot_topics_2026-11-10.md 第 2 节数字一致。
+reference_titles:
+  - '永别了，程序员！(转）'
+  - 'AI 写页面像说明书，修 Bug 像贴膏药？把这两句话写进 AGENTS.md'
+  - 'C++26 草案被否，二十八年来头一回'
+  - '从 Coze 居然要下线了说起'
+  - '换个思路理解：非阻塞挂起'
+  - '由 key 引发的思考'
+  - 'Codex中必装的11个Skills'
+  - '让 Codex 自己查账：一个省 token 的小技巧'
+  - '你的能力正在被重新定价：AI 时代程序员资产重估指南'
+  - '全球股市跌麻了：AI在进化，牛马在买单'
+  - 'Lomo Agent：面向创作型、持续协作 Agent 的架构设计与工程实践'
+  - 'Event Loop 这篇你看完就不用再看别的了！'
+  - '漫画工坊上线用户破百：公众号漫画从需求到变现全复盘'
+  - '栗子前端技术周刊第 153 期 - Vitest 5.1、Remix v3.2、Node.js 27 A'
+  - '被杀掉之后：我把 Android 的「唤起 + 常驻」重做了一遍'
+  - 'AI-SDLC 实践 04｜方案设计：把 Spec 转化为技术方案，并拆解为多 SubAgent 可执行'
+  - '6 亿播放的闪身步，我用前端算出 15 倍重心差'
+  - 'Flutter 下 AOT 一个你怎么都想不出来的 Bug ，JIT 正常的计算，在 AOT 居然算错了'
+  - 'Rolldown 把插件改动回传提速 26 倍'
+  - 'GitHub 日榜趋势速报 ／ 2026-11-09'
+
+# 结构原型：只借「骨架形状」，不借任何原文句子。
+# sections 可用的块由 src/rewrite.py 渲染：
+#   judgement  判断 / 冲突开场（白话观点，不含具体事实断言）
+#   what       它是什么（项目简介 + API 真实字段）
+#   takeaway   能带走的清单（README Features 原文或 score() 中文白话信号）
+#   first_step 最小一步（README 里现成的安装 / 上手命令）
+#   boundary   边界（协议、日期、仍在改，全部真实字段）
+#   labels     话题词与标签（关联同话题标签，见 labels 段）
+prototypes:
+  - id: takeaway_list
+    hook_type: '清单 / 实操'
+    basis: '50 条里藏 >= 赞 22 条，读者先想着存下来；落点通常是一份能直接带走的东西。'
+    openings:
+      - '一个工具值不值得装，先看它能不能给你留下点能直接用的东西。'
+      - '收藏比点赞多的那类内容，通常不是讲道理，是给了一份能带走的做法。'
+      - '看项目说明最容易漏掉的不是功能列表，是装完之后第一步做什么。'
+    sections: [judgement, what, takeaway, first_step, boundary, labels]
+    takeaway_title: '能带走的三条'
+    closings:
+      - '能不能用上，试过第一步就知道，不用先把说明从头读完。'
+      - '工具还在改，真要长期用，记得回头看一眼仓库。'
+    source_query: 'topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}'
+    default_labels: ['开发工具', '开源', '效率工具']
+
+  - id: judgement_first
+    hook_type: '判断 / 冲突'
+    basis: '赞 > 藏 的条目多以一个判断或冲突开场；50 条里没有一条是「项目安装教程 / 功能介绍」。'
+    openings:
+      - '装之前先想清楚它管什么，比先记命令有用。'
+      - '同样的活儿换个做法，省下来的往往不是时间，是反复确认的功夫。'
+      - '很多工具不是不好用，是一开始就被用错了地方。'
+    sections: [judgement, what, boundary, first_step, takeaway, labels]
+    takeaway_title: '先记这几点'
+    closings:
+      - '合不合用，拿一条真实命令试一下比看十行介绍快。'
+      - '项目还在更新，命令和版本以仓库说明为准。'
+    source_query: 'created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false'
+    default_labels: ['开源项目', '开发工具', '上手']
+
+  - id: before_after
+    hook_type: '前后对比'
+    basis: '代表条目用 before / after 代替形容词（8 个代码块、0 列表项），藏 19 > 赞 14。'
+    openings:
+      - '同一件事，写进文件里和不写进文件里，差的是下次还要不要重来一遍。'
+      - '把约定放在人脑里，和放在仓库里，换工具的时候差别就看出来了。'
+      - '改一遍和每次都改，是两回事。'
+    sections: [judgement, what, takeaway, boundary, first_step, labels]
+    takeaway_title: '前后差在哪'
+    closings:
+      - '先做最小那一步，比一次写全更省事。'
+      - '说明会改，动手前去仓库页面扫一眼。'
+    source_query: 'topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}'
+    default_labels: ['开发工具', '编码规范', '开源']
+
+# 标签 / 话题关联：只填**已实测可用**的通道，未实测的一律如实标注，不凭猜填 id。
+labels:
+  csdn:
+    field: 'tags'
+    status: ready
+    note: '发布器 CsdnPublisher.tags() 已带该字段，直接拼逗号分隔字符串。'
+  juejin:
+    field: 'tag_ids'
+    status: unverified
+    note: '标签名 -> 平台 tag_id 映射未实测，禁止凭猜填；继续沿用 settings.juejin.tag_ids 现值。'
+  zhihu:
+    field: 'topics'
+    status: unverified
+    note: '官方 / 网页通道能否带话题均未实测，暂不写死。'
+  wechat:
+    field: 'inline_hashtag'
+    status: text_only
+    note: '只在正文末尾放话题词，平台话题机制未核实。'
+  toutiao:
+    field: 'inline_hashtag'
+    status: text_only
+    note: '只在正文末尾放话题词，平台话题机制未核实。'
+
+guardrails:
+  ngram: 8                 # 连续 N 字片段比对，检出成段复制
+  max_overlap: 0           # 允许的重合片段数，0 = 零容忍
+  # 专有名词归一化：原文标题与 README 原文会同时出现同一个公开文件名，
+  # 这是字面碰撞而非洗稿。比对时两边一起清掉，其余片段仍然零容忍。
+  # ⚠️ 不是后门：整句照抄时，去掉专名后仍有大量连续片段重合，照样判失败（见测试）。
+  normalize_terms:
+    - 'AGENTS.md'
+  # 生成稿里不允许出现的说明书体例节标题（证明结构真的换了，不是换皮）
+  legacy_sections:
+    - '项目档案'
+    - '常见问题'
+    - '动手前留意'
+    - '安装教程'
+    - '这是个什么项目'

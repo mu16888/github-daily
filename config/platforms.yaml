@@ -47,7 +47,11 @@ platforms:
     endpoints:
       draft_create: '/content_api/v1/article_draft/create'
       publish: '/content_api/v1/article/publish'
-      list_by_user: '/content_api/v1/article/list_by_user'   # 凭据探活用
+      draft_delete: '/content_api/v1/article_draft/delete'   # 2026-11-10 实测存在
+      # 2026-11-10 实测：user_api/v1/user/get 是真实可用的只读端点
+      # （err_no=0 且返回 user_name），用它做凭据探测。
+      # 旧配置的 list_by_user 已失效（err_no=2 请求路由不存在），别再拿它判凭据。
+      user_info: '/user_api/v1/user/get'
     query:
       aid: '2608'
       spider: '0'
@@ -79,8 +83,12 @@ platforms:
     # 二者必须与实际请求头逐字一致，否则网关回 401 HMAC signature does not match。
     # 公开社区资料对这两个值有两种写法（*/* 与 application/json, text/plain, */*），
     # 未经本账号实测；如仍 401，只改这里即可切换，代码会自动同步签名串与请求头。
+    # 2026-11-10 实测修正（从浏览器真实请求抓取）：
+    # content-type 必须是 application/json，**不能带 ;charset=UTF-8**。
+    # 带 charset 时签名串与实际请求头不一致，网关会把路径重写成
+    # /phoenix/console/v3/... 并返回 400 Bad Request。
     accept: '*/*'
-    content_type: 'application/json;charset=UTF-8'
+    content_type: 'application/json'
     origin: 'https://editor.csdn.net'
     referer: 'https://editor.csdn.net/'
     body_format: both                  # content=HTML，markdowncontent=原始 Markdown

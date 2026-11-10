@@ -1,0 +1,61 @@
+# 赛道划分（2026-11-10 锋哥定）
+#
+# 核心思路：同一个号发两类内容，读者画像完全不同，混着发两边都不精准。
+# 所以按「内容主题」把平台分成两个赛道，各发各的内容。
+#
+#   赛道 A「技术/AI 效率」→ CSDN、知乎、掘金
+#     读者：开发者、想用 AI 提效的职场人
+#     内容源：github-daily 的 GitHub 开源项目介绍 + 沐风博客的 AI/公文/一人公司线
+#
+#   赛道 B「餐饮经营 + 餐饮 AI」→ 头条、公众号、微博、百家号
+#     读者：餐饮老板/店长/厨师长、想用 AI 管店的人
+#     内容源：沐风博客的餐饮线（11 篇）+ 餐饮AI助理（跨两边）
+#
+# 例外说明：
+# - 餐饮AI助理（canyin-ai-assistant）**两边都发**：它是产品软文，
+#   在赛道 A 讲「工具怎么用」，在赛道 B 讲「店里的账怎么算清」。
+# - 微博/百家号**没有官方发文接口**，只能出稿 + 人工粘贴（见 platforms.yaml 备注）。
+
+name: 沐风
+
+tracks:
+  # ── 赛道 A：技术 / AI 效率 ──────────────────────────────
+  tech:
+    title: 技术与 AI 效率
+    desc: 面向开发者与想用 AI 提效的职场人：开源项目拆解、AI 办公方法、一人一公司的实战
+    platforms: [csdn, zhihu, juejin]
+    # 内容源：博客里的这几类标签
+    blog_tags: [AI, AI办公, 一人公司, 工具, 公文, 公文写作系统, 副业, 效率]
+    # 内容源：本机 github-daily 生成的 GitHub 项目介绍稿
+    include_github_daily: true
+    # 每日配额（各平台自己的限制）
+    daily_quota:
+      juejin: 1        # 掘金每天 1 篇，第 2 篇静默失效
+      csdn: 1          # CSDN 免费号每天 1 篇
+      zhihu: 5         # 知乎相对宽松，但错峰发
+
+  # ── 赛道 B：餐饮经营 + 餐饮 AI ──────────────────────────
+  restaurant:
+    title: 餐饮经营与 AI 提效
+    desc: 面向餐饮老板与管理者：菜单工程、人效坪效、现金流，以及用 AI 把这些算清楚
+    platforms: [wechat, toutiao, weibo, baijiahao]
+    blog_tags: [餐饮经营]
+    include_github_daily: false
+    daily_quota:
+      wechat: 3        # 公众号一天可发多篇，但发表≠群发
+      toutiao: 5       # 头条相对宽松
+      weibo: 0         # 手动发，出稿即可
+      baijiahao: 0     # 手动发，出稿即可
+
+# 需要人工发布的平台（没有官方发文接口，或权限被回收）
+manual_only:
+  weibo:
+    reason: 微博开放平台发文接口需企业资质；个人号走网页端，且自动化操作有风控风险
+    output: 出稿到 drafts/，锋哥手动复制发布
+  baijiahao:
+    reason: 百家号 2022-07-27 已下线接口发文自助开通，个人号拿不到发文 API
+    output: 出稿到 drafts/，锋哥手动复制发布
+  wechat:
+    reason: 个人主体账号的 freepublish/mass 接口权限已被回收（errcode 48001），
+            只能建草稿后由锋哥在后台点「发表」
+    output: 自动建草稿 + 出稿，锋哥点发表

@@ -65,6 +65,11 @@ publish:
   # 待 CSDN 账号/接口问题查清并修复后再改回 false，避免每天定时跑白失败一次。
   # 保持 true 时定时跑只出稿归档，绝不对外发文。
   dry_run: true
+  # 出稿用哪套正文：legacy=原「项目说明书」结构（默认，零影响）；
+  # rewrite=话题层新结构（判断开场 / 能带走的清单 / 最小一步），见 DESIGN_TOPICS.md。
+  # 只有显式改成 rewrite，才会把 src/rewrite.py 的稿子交给发布器。
+  # 两个开关互相独立：content_source 决定「发什么」，dry_run 决定「发不发」。
+  content_source: legacy
   # 单平台失败不影响其他平台，也不影响出稿归档
   continue_on_error: true
 
@@ -75,7 +80,9 @@ zhihu:
   #   web     = B：登录态网页会话，需 ZHIHU_COOKIE（不需要内测）
   #   auto    = 有官方凭据且已授权则走 C，否则有 ZHIHU_COOKIE 就走 B，都没有则 A 跳过
   # 2026-11-09 锋哥选 A：先跳过知乎，只跑掘金 + CSDN；跑通后随时可切 web / openapi
-  mode: off
+  mode: 'off'
+  # ↑ 必须加引号：YAML 1.1 会把裸 off / on 解析成布尔 False / True，
+  #   旧写法 mode: off 在 yaml.safe_load 后是 False，发布器会静默回退成 auto。
   # B 通道是否尝试第三步「公开发布」。true=全自动（可能需要前端动态签名 x-zse-96，
   # 失败会如实 failed 且草稿仍在）；false=只自动建草稿+写正文，返回 drafted 供人工点发布。
   web_auto_publish: true

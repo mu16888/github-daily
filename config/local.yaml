@@ -1,0 +1,87 @@
+# github-daily 本机运行配置
+#
+# 这个文件只影响「本机跑」的模式（python -m src.local），与云端 GitHub Actions 完全无关。
+# 云端继续读 config/settings.yaml，两边互不干扰。
+#
+# 凭据不在这里：见 config/local_secrets.json（已被 .gitignore 挡住）。
+
+local:
+  # 本机总开关：false 时本机只出稿、不推送任何平台
+  enabled: true
+
+  # 真发闸门。true = 只出稿不推送；改 false 才真的对外发。
+  # 与云端 settings.publish.dry_run 是两个独立的闸门，互不影响。
+  dry_run: true
+
+  # 出稿用哪套正文：legacy = 原「项目说明书」结构；rewrite = 话题层新结构
+  # （判断开场 / 能带走的清单 / 最小一步，见 DESIGN_TOPICS.md）。默认 legacy。
+  content_source: legacy
+
+  # 本机自己的台账：与云端 state/published.json 分开，避免互相覆盖。
+  # 去重时会同时读云端台账（只读），所以云端发过的项目本机不会重复发。
+  ledger: state/local-ledger.json
+
+  # 每天出几篇（每平台各发 1 篇）
+  picks_per_day: 1
+
+# 平台开关（本机专用）。知乎与头条走浏览器通道，需要先在本机登录一次。
+platforms:
+  juejin:
+    enabled: true      # Cookie 接口，已跑通（赛道 A）
+    track: tech
+  csdn:
+    enabled: true      # 浏览器通道：接口只能建草稿，公开发布走「发布文章」面板
+    mode: browser
+    track: tech
+  zhihu:
+    enabled: true      # 浏览器通道：需要 x-zse-96 签名，只能网页发（赛道 A）
+    mode: browser
+    track: tech
+  wechat:
+    enabled: true      # 官方接口建草稿（赛道 B）；发表需人工点（48001 权限回收）
+    track: restaurant
+  toutiao:
+    enabled: true      # 浏览器通道：头条号无官方发文接口（赛道 B）
+    mode: browser
+    track: restaurant
+  weibo:
+    enabled: false     # 微博无发文接口，只出稿人工发（赛道 B）
+    track: restaurant
+    manual_only: true
+  baijiahao:
+    enabled: false     # 百家号 2022-07 已下线发文 API，只出稿人工发（赛道 B）
+    track: restaurant
+    manual_only: true
+
+# 浏览器通道（知乎 / 头条）
+browser:
+  # 用本机 Edge，不额外下载 Chromium
+  channel: msedge
+  headless: false        # 首次登录必须 false；要人扫码/确认
+  # 独立 profile 目录：和锋哥日常浏览的 Edge 完全隔离，Cookie 不互相污染
+  profile_dir: state/browser-profile
+  # 首次登录用这个模式开一次浏览器，人工扫码登录，之后 profile 里就有登录态
+  login_url:
+    zhihu: https://www.zhihu.com/signin
+    toutiao: https://mp.toutiao.com/auth/page/login
+  # 发布超时
+  publish_timeout_seconds: 180
+  # 登录等待时长：手机号验证码要等短信，给足时间（默认 240 秒偏紧）
+  login_timeout_seconds: 600
+
+# 公众号（官方接口，AppID/AppSecret 复用沐风博客 config/wechat_config.json）
+wechat:
+  # 封面来源：GitHub 开放图 1200x630，裁成公众号 2.35:1 上传为永久素材
+  cover_source: opengraph
+  cover_ratio: 2.35
+  # 摘要（digest）字节上限，微信按 UTF-8 字节算
+  digest_max_bytes: 115
+  # 标题字节上限
+  title_max_bytes: 63
+  # 原文链接前缀（content_source_url），为空则不带
+  source_url_prefix: ''
+
+# 本机补发策略：目标时刻过了还没发（比如电脑当时关机），多久之内还算「今天该发」
+catchup:
+  # 目标时刻后的补发窗口（分钟）。超过这个点就跳过当天，宁可不发也不半夜发。
+  window_minutes: 180
