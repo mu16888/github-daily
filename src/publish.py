@@ -125,6 +125,17 @@ def csdn_sign_string(method: str, accept: str, content_type: str,
             f"{path}")
 
 
+# CSDN 网关公开常量（社区抓包整理，非私有凭据）。
+# 发布后回查「我的文章列表」时复用同一套 x-ca 签名。
+_CSDN_GW = {
+    "base": "https://bizapi.csdn.net",
+    "ca_key": "203803574",
+    "ca_secret": "9znpamsyl2c7cdrr9sas0le9vbc3r6ba",
+    "accept": "*/*",
+    "content_type": "application/json",
+}
+
+
 @dataclass
 class Result:
     platform: str
@@ -658,6 +669,86 @@ class CsdnPublisher(BasePublisher):
         if not ok and ("数量已达到限制" in msg or "达到限制" in msg or "限制的" in msg):
             return False, "", f"今日发文额度已用尽（{msg[:80]}），需次日重置"
         return ok, link, f"http={resp.status_code} code={code!r} msg={msg[:120]}"
+
+    def publish(self, article: dict) -> Result:
+        miss = self.missing()
+        if miss:
+            return Result(self.name, "skipped", detail=f"缺少 Secrets: {', '.join(miss)}")
+        if self.dry_run:
+            url, _h, body = self.build(article)
+            size = len(json.dumps(body, ensure_ascii=False))
+            return Result(self.name, "dry_run",
+                          detail=f"已组装请求（{url}，正文 {size} 字符），未实际发送")
+        try:
+            url, headers, body = self.build(article)
+            resp = self.session.post(url, headers=headers, json=body, timeout=30)
+            ok, link, detail = self.judge(resp)
+            if not ok:
+                return Result(self.name, "failed", url=link, detail=detail,
+                              http_status=resp.status_code)
+            # 发布后回查：确认文章真的落库，防「额度满时接口返回成功但不落库」的假成功。
+            title = self.title(article)
+            verified, vdetail = self._verify_published(title)
+            if verified:
+                return Result(self.name, "published", url=link,
+                              detail=f"{detail} | 回查确认已落库",
+                              http_status=resp.status_code)
+            if vdetail.startswith("回查未找到") or vdetail.startswith("回查找到"):
+                return Result(self.name, "failed", url=link,
+                              detail=f"{detail} | 回查未通过：{vdetail}",
+                              http_status=resp.status_code)
+            # 回查接口自身异常：保守保留 published，但标注未验证，不误杀真成功。
+            return Result(self.name, "published", url=link,
+                          detail=f"{detail} | [回查未完成：{vdetail}]",
+                          http_status=resp.status_code)
+        except Exception as e:
+            return Result(self.name, "failed", detail=f"{type(e).__name__}: {e}")
+
+    def _verify_published(self, title: str) -> tuple[bool, str]:
+        """发布后回查：调 CSDN 文章列表，确认刚发的文章真的落库。
+
+        背景：CSDN 免费号额度满时，saveArticle 仍返回 code=200「成功」，
+        但文章并不落库（线上 404）。本方法在发布成功后立刻核对列表，
+        把假成功降级为 failed，避免自动化误以为已发。
+        """
+        cookie = self.cookie("CSDN_COOKIE")
+        if not cookie:
+            return False, "回查缺 CSDN_COOKIE"
+        gw = _CSDN_GW
+        path = "/blog/phoenix/console/v1/article/list?status=all&page=1&pageSize=20"
+        nonce = str(uuid.uuid4())
+        to_sign = csdn_sign_string("GET", gw["accept"], gw["content_type"],
+                                   gw["ca_key"], nonce, path).encode()
+        sign = base64.b64encode(
+            hmac.new(gw["ca_secret"].encode(), to_sign, hashlib.sha256).digest()).decode()
+        headers = {
+            "content-type": gw["content_type"],
+            "accept": gw["accept"],
+            "origin": "https://editor.csdn.net",
+            "referer": "https://editor.csdn.net/",
+            "cookie": cookie,
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36",
+            "accept-language": "zh-CN",
+            "x-ca-key": gw["ca_key"],
+            "x-ca-nonce": nonce,
+            "x-ca-signature": sign,
+            "x-ca-signature-headers": "x-ca-key,x-ca-nonce",
+        }
+        try:
+            time.sleep(3)  # 等 CSDN 列表缓存刷新，避免刚发布就查不到
+            r = self.session.get(gw["base"] + path, headers=headers, timeout=30)
+            d = _json(r)
+            items = ((d.get("data") or {}).get("list") or [])
+            target = (title or "").strip()
+            for it in items:
+                if str(it.get("title") or "").strip() == target:
+                    st = str(it.get("status") or "")
+                    if st in ("publish", "1", "3", "request_new_publish"):
+                        return True, f"回查确认已落库 articleId={it.get('articleId')}"
+                    return False, f"回查找到但状态={st}（未真正公开）"
+            return False, "回查未找到匹配标题（疑似额度满未落库）"
+        except Exception as e:
+            return False, f"回查异常 {type(e).__name__}"
 
 
 def all_publishers(platforms_cfg: dict, settings: dict) -> list[BasePublisher]:
