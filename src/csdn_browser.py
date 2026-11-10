@@ -125,11 +125,77 @@ class CsdnBrowserPublisher:
                     if (r.width > 0 && r.height > 0) { el.remove(); n++; }
                   });
                 }
+                // 「模版库 / 我的模版」浮层（新手引导）：class 不固定，按内容特征识别。
+                // 2026-11-11 实测它盖住发布面板，是「只存成草稿」的真正原因。
+                document.querySelectorAll('div').forEach(el => {
+                  const t = (el.innerText || '');
+                  if ((t.includes('模版库') || t.includes('模板库') || t.includes('我的模版'))
+                      && (t.includes('添加到正文') || t.includes('我的模版'))
+                      && t.length < 3000) {
+                    const r = el.getBoundingClientRect();
+                    if (r.width > 0 && r.height > 0) { el.remove(); n++; }
+                  }
+                });
                 return n;
             }""")
             if not left:
                 break
             page.wait_for_timeout(300)
+
+    def _upload_cover(self, page, cover_path: str) -> tuple[bool, str]:
+        """发布面板里「添加封面」带红色星号 = 必填项。
+
+        2026-11-11 实测：不传封面点面板底部「发布文章」**不生效**，
+        文章只被存成草稿（对外表现就是「接口说成功、线上没有」）。
+
+        做法：点「从本地上传」→ 页面此时才注入 input[type=file] →
+        set_input_files → 等封面区出现图片。
+        """
+        p = Path(cover_path)
+        if not cover_path or not p.exists():
+            return False, f"封面文件不存在: {cover_path or '(空)'}"
+        try:
+            modal = page.locator(".publish-article-modal__body")
+            scope = modal if modal.count() > 0 else page
+            try:
+                scope.locator("text=从本地上传").first.click(timeout=8000)
+                page.wait_for_timeout(1000)
+            except Exception:
+                pass
+            fi = None
+            # ⚠️ 页面里有 3 个 file input：.md（导入 Markdown）、image/*（封面）、图片（正文插图）。
+            #    早前用 input[type=file] 的第一个 → 打到 .md 那个 → 封面永远传不上去。
+            for s in ("input[type=file][accept*='image']",
+                      "input[type=file][accept*='png']",
+                      "input[type=file][accept*='jpg']"):
+                loc = scope.locator(s)
+                if loc.count() == 0:
+                    loc = page.locator(s)
+                if loc.count() > 0:
+                    fi = loc.first
+                    break
+            if fi is None:
+                fi = scope.locator("input[type=file]")
+                if fi.count() == 0:
+                    fi = page.locator("input[type=file]")
+            if fi.count() == 0:
+                return False, "找不到封面文件上传控件"
+            fi.set_input_files(str(p), timeout=25000)
+            page.wait_for_timeout(8000)
+            # 判定：封面区出现「可见」图片，且「暂无内容图片」提示消失
+            has_img = False
+            try:
+                has_img = scope.locator("img:visible").count() > 0
+            except Exception:
+                has_img = False
+            try:
+                if "暂无内容图片" in (scope.inner_text() or ""):
+                    has_img = False
+            except Exception:
+                pass
+            return has_img, ("封面已上传" if has_img else "上传后封面区仍未出现图片")
+        except Exception as e:
+            return False, f"{type(e).__name__}: {str(e)[:90]}"
 
     def _fill_publish_panel(self, page, tags: str, brief: str) -> dict:
         """填「发布文章」面板：标签、摘要、可见范围。
@@ -231,18 +297,18 @@ class CsdnBrowserPublisher:
         return out
 
     def publish_browser(self, article: dict, title: str = "", body: str = "",
-                        brief: str = "", tags: str = "") -> Result:
+                        brief: str = "", tags: str = "", cover: str = "") -> Result:
         """供流水线调用：浏览器通道发布。
 
-        与接口版的 publish() 分开，因为浏览器通道需要自己管标题/正文/摘要/标签，
+        与接口版的 publish() 分开，因为浏览器通道需要自己管标题/正文/摘要/标签/封面，
         而且必须用可视窗口（headless 下 CSDN 不渲染发布面板）。
         """
         return self.publish(article, headless=False, title=title, body=body,
-                            brief=brief, tags=tags)
+                            brief=brief, tags=tags, cover=cover)
 
     def publish(self, article: dict, headless: bool = True,
                 title: str = "", body: str = "", brief: str = "",
-                tags: str = "") -> Result:
+                tags: str = "", cover: str = "") -> Result:
         """在 CSDN 编辑器里写一篇并发布。"""
         title = title or (article.get("titles") or {}).get("csdn") or article.get("title", "")
         body = body or article.get("markdown", "")
@@ -351,11 +417,29 @@ class CsdnBrowserPublisher:
             pub_btn.click(timeout=15000)
             page.wait_for_timeout(2500)
 
+            # ⚠️ 点「发布」后 CSDN 会弹「模版库 / 我的模版」新手引导浮层，
+            #    它盖住真正的发布面板 → 后面点不到面板里的「发布文章」→ 文章只存成草稿。
+            #    （2026-11-11 实测：面板里那个「发布文章」按钮 visible=False，
+            #      截图确认当时浮在页面上的正是模版库。）
+            #    必须先清掉这类浮层，再进面板。
+            self._dismiss_modals(page)
+
             # 「发布文章」面板：文章标签 / 摘要 / 封面 / 可见范围 / 文章类型。
             # ⚠️ 这个面板在 headless 下不渲染（内容为空），必须用可视窗口。
             panel = self._fill_publish_panel(page, tags, brief)
             if panel.get("error"):
                 return Result(self.name, "failed", detail=panel["error"])
+
+            # 封面是必填（面板里「添加封面」带红星）：不传封面点「发布文章」只存草稿。
+            # 2026-11-11 手动发一篇验证：传封面 → 发布成功（审核中）；不传 → 只存草稿。
+            if not cover:
+                return Result(self.name, "failed",
+                              detail="未提供封面：CSDN 发布面板「添加封面」是红星必填项，"
+                                     "不传封面点「发布文章」只会存成草稿（2026-11-11 实测）")
+            ok_cover, cover_detail = self._upload_cover(page, cover)
+            if not ok_cover:
+                return Result(self.name, "failed", detail=f"封面上传失败：{cover_detail}")
+            page.wait_for_timeout(1500)
 
             # 面板底部红色「发布文章」按钮
             submitted = False
@@ -373,7 +457,10 @@ class CsdnBrowserPublisher:
 
             # CSDN 免费号每天发文额度有限（实测提示「今日发文额度已用完」）。
             # 撞到额度要如实报 skipped，不能当成发布失败，更不能假报成功。
+            # ⚠️ 这里必须用本方法的局部变量：早前误用了 _fill_publish_panel 里的
+            #    out → NameError: name 'out' is not defined，浏览器通道整条挂掉。
             quota_hit = False
+            quota_msg = ""
             for sel in ('[class*=tip]', '.el-message', '[class*=toast]'):
                 try:
                     els = page.locator(sel)
@@ -382,9 +469,16 @@ class CsdnBrowserPublisher:
                         if not el.is_visible():
                             continue
                         txt = el.inner_text() or ""
-                        if "发文额度" in txt or "额度已用完" in txt:
+                        # ⚠️ 实测提示是「今日发文额度还有 2 篇，可去这里提升额度」——
+                        #    这是「有额度」，不是撞额度。旧判断只要含「发文额度」就当撞满，
+                        #    把有额度也判成 skipped。这里只认耗尽类措辞，并显式排除「还有」。
+                        if "还有" in txt or "可提升" in txt:
+                            continue
+                        if ("额度已用完" in txt or "额度用尽" in txt
+                                or "已达限制" in txt or "达到限制" in txt
+                                or "数量已达" in txt):
                             quota_hit = True
-                            out["quota_msg"] = txt.strip()[:80]
+                            quota_msg = txt.strip()[:80]
                             break
                 except Exception:
                     continue
@@ -392,8 +486,8 @@ class CsdnBrowserPublisher:
                     break
             if quota_hit:
                 return Result(self.name, "skipped",
-                              detail=f"今日发文额度已用完（CSDN 免费号每天 1 篇）："
-                                     f"{out.get('quota_msg', '')}")
+                              detail=f"今日发文额度已用完（CSDN 免费号每天 2 篇）："
+                                     f"{quota_msg}")
 
             # 可能出现二次确认弹窗
             for sel in ("button:has-text('确认发布')", ".el-button--primary:has-text('发布')",
@@ -446,7 +540,16 @@ class CsdnBrowserPublisher:
                         ok = True
                         detail = "页面出现发布成功提示"
                     else:
-                        detail = f"未判定成功，当前 url={url_now[:100]}"
+                        # 失败留证据（截图），别再靠猜
+                        try:
+                            shot = (Path(__file__).resolve().parent.parent
+                                    / "state" / "csdn_last_fail.png")
+                            shot.parent.mkdir(parents=True, exist_ok=True)
+                            page.screenshot(path=str(shot))
+                            detail = (f"未判定成功，当前 url={url_now[:100]}"
+                                      f"（截图 state/{shot.name}）")
+                        except Exception:
+                            detail = f"未判定成功，当前 url={url_now[:100]}"
 
             link = ""
             if ok:
