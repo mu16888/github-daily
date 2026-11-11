@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -58,7 +59,35 @@ class CsdnBrowserPublisher:
             viewport={"width": 1600, "height": 1000},
             locale="zh-CN",
         )
+        self._inject_cookie(self._ctx)
         return self._ctx
+
+    def _inject_cookie(self, ctx) -> None:
+        """云端没有本机 profile 登录态：把 CSDN_COOKIE 注入浏览器上下文。
+
+        本机 profile 里已有登录态时环境变量为空，注入逻辑自动跳过；
+        GitHub Actions 每次都是干净 runner，靠 secrets.CSDN_COOKIE 注入。
+        实测 cookie 有效期约半年（UserToken/UserName 到 2027-05），不是几小时。
+        """
+        raw = (os.environ.get("CSDN_COOKIE") or "").strip()
+        if not raw:
+            return
+        cookies = []
+        for part in raw.split(";"):
+            part = part.strip()
+            if not part or "=" not in part:
+                continue
+            name, _, value = part.partition("=")
+            if not name.strip():
+                continue
+            cookies.append({"name": name.strip(), "value": value.strip(),
+                            "domain": ".csdn.net", "path": "/"})
+        if cookies:
+            try:
+                ctx.add_cookies(cookies)
+                print(f"[csdn] 已注入 {len(cookies)} 个 Cookie（云端登录态）")
+            except Exception as e:
+                print(f"[csdn] Cookie 注入失败：{type(e).__name__}: {e}")
 
     def close(self) -> None:
         try:
@@ -74,10 +103,15 @@ class CsdnBrowserPublisher:
         self._ctx = None
         self._pw = None
 
-    def _dismiss_modals(self, page) -> None:
+    def _dismiss_modals(self, page, keep_publish_panel: bool = False) -> None:
         """关掉挡住编辑器的各种弹窗。
 
-        实测 CSDN 编辑器会弹两类：
+        ⚠️ keep_publish_panel=True 用在「发布文章」面板已打开之后：
+        此时 `.el-dialog__headerbtn` 就是面板自己的右上角 ×，点它等于关掉面板；
+        按「模版库」文字删 div 也可能删到面板的祖先容器（innerText 会包含后代文本）。
+        2026-11-11 实测：不设这个保护时封面组件会从 DOM 里消失，导致上传永远失败。
+
+        CSDN 编辑器会弹两类：
         - `.modal_outer`（公告 / 隐私协议）
         - `.beginnerGuide-box`（新手引导，class 带 show-beginnerGuide-box）
         不关掉的话后续所有点击都被它拦下（pointer events intercepted）。
@@ -91,6 +125,9 @@ class CsdnBrowserPublisher:
             ".ant-modal-close", ".el-dialog__headerbtn",
             "[class*='guide'] [class*='close']", "[class*='popup'] [class*='close']",
         ]
+        if keep_publish_panel:
+            sels = [s for s in sels if s not in
+                    (".ant-modal-close", ".el-dialog__headerbtn")]
         for _ in range(6):
             found = False
             for sel in sels:
@@ -131,7 +168,11 @@ class CsdnBrowserPublisher:
                   const t = (el.innerText || '');
                   if ((t.includes('模版库') || t.includes('模板库') || t.includes('我的模版'))
                       && (t.includes('添加到正文') || t.includes('我的模版'))
-                      && t.length < 3000) {
+                      && t.length < 800) {
+                    // innerText 含后代文本，祖先 div 也会匹配；绝不能删含
+                    // 发布面板 / 编辑器 的容器，否则封面组件一起消失。
+                    if (el.querySelector('.publish-article-modal__body') ||
+                        el.querySelector('.editor__inner')) return;
                     const r = el.getBoundingClientRect();
                     if (r.width > 0 && r.height > 0) { el.remove(); n++; }
                   }
@@ -145,57 +186,141 @@ class CsdnBrowserPublisher:
     def _upload_cover(self, page, cover_path: str) -> tuple[bool, str]:
         """发布面板里「添加封面」带红色星号 = 必填项。
 
-        2026-11-11 实测：不传封面点面板底部「发布文章」**不生效**，
-        文章只被存成草稿（对外表现就是「接口说成功、线上没有」）。
-
-        做法：点「从本地上传」→ 页面此时才注入 input[type=file] →
-        set_input_files → 等封面区出现图片。
+        2026-11-11 抓包实测，两个此前一直踩的坑：
+          1) 封面真正的 input 是 `.el-upload__input`（accept=.png,.jpg,.jpeg,.gif），
+             包在 `.el-upload > button.upload-img-box`「从本地上传」里。
+             旧代码按 accept*='image' 找 → 命中的是 `.cfw-file-input`（正文插图），
+             再兜底就打到 `.md` 导入框，所以封面从来没被喂给正确的控件。
+          2) 选完文件 CSDN 会弹「图片裁剪」对话框，必须点右下角「确认上传」
+             才会真正上传并回填封面。旧代码 set_input_files 后只等 8 秒就判定，
+             封面区自然一直显示「暂无内容图片」→ 点发布只存草稿。
         """
         p = Path(cover_path)
         if not cover_path or not p.exists():
             return False, f"封面文件不存在: {cover_path or '(空)'}"
+
+        # 抓上传接口响应：封面没回填时能看到是 200、4xx 还是根本没发请求
+        uploads: list[str] = []
+
+        def _cap(r):
+            try:
+                if r.request.method == "POST" and any(
+                        k in r.url.lower() for k in ("upload", "img", "image", "oss", "picture")):
+                    try:
+                        body = r.text()[:180]
+                    except Exception:
+                        body = ""
+                    uploads.append(f"{r.status} {r.url[:80]} {body[:140]}")
+            except Exception:
+                pass
+
+        page.on("response", _cap)
+
+        def dump_state() -> str:
+            """失败时把页面真实 DOM 与上传响应带出来，避免下一次还要靠猜。"""
+            try:
+                d = page.evaluate("""() => ({
+                    inputs: Array.from(document.querySelectorAll('input[type=file]'))
+                        .map(e => (e.className||'') + '|' + (e.accept||'')),
+                    panel: ((document.querySelector('.publish-article-modal__body')
+                             || document.body).innerText || '').slice(0, 220)
+                })""")
+                return (f" | inputs={d['inputs']} panel={d['panel']!r}"
+                        f" | uploads={uploads[-4:]}")
+            except Exception:
+                return f" | uploads={uploads[-4:]}"
+
+        # ⚠️ 一律用 page 全页定位：不能绑死在 .publish-article-modal__body 上。
+        #    新建文章时该容器可能为空（打开已有草稿时才有内容），scope 里什么都找不到。
+        # 若发布面板被浮层/快捷键误关，重新点「发布」打开。
         try:
-            modal = page.locator(".publish-article-modal__body")
-            scope = modal if modal.count() > 0 else page
+            m = page.locator(".publish-article-modal__body")
+            if m.count() == 0 or not m.first.is_visible():
+                for b in page.locator("button:has-text('发布')").all():
+                    try:
+                        if b.is_visible() and b.is_enabled():
+                            b.click(timeout=10000)
+                            break
+                    except Exception:
+                        continue
+                page.wait_for_timeout(2500)
+                self._dismiss_modals(page)
+        except Exception:
+            pass
+
+        # 封面区异步渲染：新建文章比打开已有草稿慢，最多等 15 秒。
+        try:
+            page.wait_for_function("""() =>
+                !!document.querySelector('input.el-upload__input[type=file]') ||
+                !!document.querySelector('button.upload-img-box')""", timeout=15000)
+        except Exception:
+            pass
+
+        def confirm_crop() -> bool:
+            """点「图片编辑」弹窗的「确认上传」；没弹就返回 False。
+
+            ⚠️ 选择器不能写成 `"button:has-text('x'), text=x"` —— Playwright 把逗号
+            当成组合 CSS 解析，`text=` 里的 `=` 会直接抛 Unexpected token。
+            必须逐个 selector 单独试（2026-11-11 实测踩过）。
+            """
+            for sel in ("button:has-text('确认上传')", "text=确认上传"):
+                try:
+                    btn = page.locator(sel).first
+                    btn.wait_for(state="visible", timeout=8000)
+                    for _ in range(12):
+                        if btn.is_enabled():
+                            btn.click(timeout=12000, force=True)
+                            return True
+                        page.wait_for_timeout(500)
+                except Exception:
+                    continue
+            return False
+
+        try:
+            # 主路径：直接给封面 input 喂文件 —— 不点任何按钮，彻底避开浮层遮挡。
+            cropped = False
+            fi = page.locator("input.el-upload__input[type=file]")
+            if fi.count() > 0:
+                try:
+                    fi.first.set_input_files(str(p), timeout=25000)
+                    cropped = confirm_crop()
+                except Exception:
+                    pass
+
+            # 退路：按真实交互点「从本地上传」用 filechooser（抓包实测能拉起裁剪框）
+            if not cropped:
+                last_err = ""
+                for sel in ("button.upload-img-box", ".el-upload--text button",
+                            "text=从本地上传"):
+                    try:
+                        btn = page.locator(sel).first
+                        btn.wait_for(state="attached", timeout=6000)
+                        with page.expect_file_chooser(timeout=12000) as fc:
+                            btn.click(timeout=8000, force=True)
+                        fc.value.set_files(str(p))
+                        if confirm_crop():
+                            cropped = True
+                            break
+                    except Exception as e2:
+                        last_err = f"{type(e2).__name__}: {str(e2)[:80]}"
+                        continue
+                if not cropped:
+                    return False, ("封面选文件失败：" + last_err + dump_state())
+
+            page.wait_for_timeout(12000)
+            txt = ""
             try:
-                scope.locator("text=从本地上传").first.click(timeout=8000)
-                page.wait_for_timeout(1000)
+                m = page.locator(".publish-article-modal__body")
+                txt = (m.first.inner_text() if m.count()
+                       else page.locator("body").inner_text()) or ""
             except Exception:
                 pass
-            fi = None
-            # ⚠️ 页面里有 3 个 file input：.md（导入 Markdown）、image/*（封面）、图片（正文插图）。
-            #    早前用 input[type=file] 的第一个 → 打到 .md 那个 → 封面永远传不上去。
-            for s in ("input[type=file][accept*='image']",
-                      "input[type=file][accept*='png']",
-                      "input[type=file][accept*='jpg']"):
-                loc = scope.locator(s)
-                if loc.count() == 0:
-                    loc = page.locator(s)
-                if loc.count() > 0:
-                    fi = loc.first
-                    break
-            if fi is None:
-                fi = scope.locator("input[type=file]")
-                if fi.count() == 0:
-                    fi = page.locator("input[type=file]")
-            if fi.count() == 0:
-                return False, "找不到封面文件上传控件"
-            fi.set_input_files(str(p), timeout=25000)
-            page.wait_for_timeout(8000)
-            # 判定：封面区出现「可见」图片，且「暂无内容图片」提示消失
-            has_img = False
-            try:
-                has_img = scope.locator("img:visible").count() > 0
-            except Exception:
-                has_img = False
-            try:
-                if "暂无内容图片" in (scope.inner_text() or ""):
-                    has_img = False
-            except Exception:
-                pass
-            return has_img, ("封面已上传" if has_img else "上传后封面区仍未出现图片")
+            # 「暂无内容图片」是封面为空时的专属提示，它消失即代表封面已回填。
+            ok = "暂无内容图片" not in txt
+            return ok, ("封面已上传" if ok
+                        else "上传后封面区仍显示「暂无内容图片」" + dump_state())
         except Exception as e:
-            return False, f"{type(e).__name__}: {str(e)[:90]}"
+            return False, f"{type(e).__name__}: {str(e)[:100]}" + dump_state()
 
     def _fill_publish_panel(self, page, tags: str, brief: str) -> dict:
         """填「发布文章」面板：标签、摘要、可见范围。
@@ -210,8 +335,7 @@ class CsdnBrowserPublisher:
             文章模板  默认模板 / 简洁模板 / 廓桥模板
         底部：[取消] [保存为草稿] [定时发布] [发布文章]
 
-        ⚠️ 关键：这个面板在 headless 下不渲染（只有标题和两个空按钮），
-        必须用可视窗口（headless=False）。
+        ⚠️ 2026-11-11 实测：headless 下面板也能完整渲染，早前「必须可视窗口」的结论已过时。
         """
         out: dict = {"error": "", "tags_set": False, "brief_set": False}
 
@@ -247,39 +371,13 @@ class CsdnBrowserPublisher:
                             "headless 下 CSDN 不渲染该面板，需要用可视窗口运行。")
             return out
 
-        # 标签：点「+ 添加文章标签」，弹出标签搜索框，输名字回车添加。
-        # 实测（2026-11-10）：
-        #   触发按钮  .tag__btn-tag（文案「添加文章标签」）
-        #   搜索输入框 placeholder = 「请输入文字搜索，Enter键入可添加自定义标签」
-        #   面板自带推荐标签（开源 / 开发工具 / Git / 人工智能 …），输入即过滤
-        try:
-            tag_list = [t.strip() for t in str(tags or "").split(",") if t.strip()][:5]
-            if tag_list:
-                add = panel.locator(".tag__btn-tag").first
-                if add.count() == 0:
-                    add = page.locator("text=添加文章标签").first
-                add.click(timeout=8000)
-                page.wait_for_timeout(1200)
-
-                ti = page.locator(
-                    "input[placeholder*='搜索，Enter键入可添加自定义标签'], "
-                    "input[placeholder*='Enter键入']").first
-                if ti.count() == 0:
-                    ti = page.locator(
-                        "input[placeholder*='搜索'], input[placeholder*='请输入文字']").first
-                if ti.count() > 0 and ti.is_visible():
-                    for t in tag_list:
-                        ti.click()
-                        ti.fill(t)
-                        page.wait_for_timeout(700)   # 等推荐标签过滤出来
-                        page.keyboard.press("Enter")
-                        page.wait_for_timeout(700)
-                    out["tags_set"] = True
-                    # 关掉标签下拉，避免遮挡后续按钮
-                    page.keyboard.press("Escape")
-                    page.wait_for_timeout(400)
-        except Exception:
-            pass
+        # 标签：这里**故意不碰**。
+        # 编辑器顶部（publish() 第 393 行起）已经填过标签，面板里会自带；
+        # 标签不是必填，而「添加封面」才是红星必填。
+        # 2026-11-11 实测：点开面板内的「添加文章标签」会拉出一个推荐标签浮层，
+        # 它挂在面板容器内、遮住封面区和底部「发布文章」按钮；按 Escape 又会
+        # 把整个面板关掉。两条路都会让封面上传失败 → 只存草稿。
+        # 结论：面板内只填摘要，标签交给编辑器顶部，不打开任何下拉。
 
         # 摘要：文章摘要 textarea（面板内的第一个可见 textarea）
         try:
@@ -300,10 +398,13 @@ class CsdnBrowserPublisher:
                         brief: str = "", tags: str = "", cover: str = "") -> Result:
         """供流水线调用：浏览器通道发布。
 
-        与接口版的 publish() 分开，因为浏览器通道需要自己管标题/正文/摘要/标签/封面，
-        而且必须用可视窗口（headless 下 CSDN 不渲染发布面板）。
+        与接口版的 publish() 分开，因为浏览器通道需要自己管标题/正文/摘要/标签/封面。
+        云端 Linux runner 无显示器，默认 headless=True（2026-11-11 实测发布面板在无头下
+        也能完整渲染，此前「必须可视窗口」的结论已过时）；本机要看交互时可设
+        CSDN_HEADLESS=false。
         """
-        return self.publish(article, headless=False, title=title, body=body,
+        headless = os.environ.get("CSDN_HEADLESS", "true").lower() not in ("false", "0", "no")
+        return self.publish(article, headless=headless, title=title, body=body,
                             brief=brief, tags=tags, cover=cover)
 
     def publish(self, article: dict, headless: bool = True,
@@ -422,10 +523,10 @@ class CsdnBrowserPublisher:
             #    （2026-11-11 实测：面板里那个「发布文章」按钮 visible=False，
             #      截图确认当时浮在页面上的正是模版库。）
             #    必须先清掉这类浮层，再进面板。
-            self._dismiss_modals(page)
+            self._dismiss_modals(page, keep_publish_panel=True)
 
             # 「发布文章」面板：文章标签 / 摘要 / 封面 / 可见范围 / 文章类型。
-            # ⚠️ 这个面板在 headless 下不渲染（内容为空），必须用可视窗口。
+            # 2026-11-11 实测：headless 下面板也能完整渲染，早前「必须可视窗口」结论已过时。
             panel = self._fill_publish_panel(page, tags, brief)
             if panel.get("error"):
                 return Result(self.name, "failed", detail=panel["error"])
@@ -441,14 +542,23 @@ class CsdnBrowserPublisher:
                 return Result(self.name, "failed", detail=f"封面上传失败：{cover_detail}")
             page.wait_for_timeout(1500)
 
-            # 面板底部红色「发布文章」按钮
-            submitted = False
+            # 面板底部红色「发布文章」按钮。
+            # ⚠️ 页面上不止一个「发布文章」按钮（编辑器工具栏也有一个），
+            #    旧代码取第一个 → 可能点错、只存草稿。面板底部那个在 DOM 里排最后，倒序优先。
+            cands = []
             for b in page.locator("button:has-text('发布文章')").all():
                 try:
                     if b.is_visible() and b.is_enabled():
-                        b.click(timeout=15000)
-                        submitted = True
-                        break
+                        cands.append(b)
+                except Exception:
+                    continue
+            submitted = False
+            for b in reversed(cands):
+                try:
+                    # force：面板里可能有浮层盖住按钮，普通 click 会一直超时
+                    b.click(timeout=15000, force=True)
+                    submitted = True
+                    break
                 except Exception:
                     continue
             if not submitted:

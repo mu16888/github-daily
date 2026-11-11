@@ -1,5 +1,7 @@
 requests>=2.31,<3
 PyYAML>=6.0,<7
+# CSDN 封面：opengraph 图统一裁成 1200×675 JPG（与手动验证成功的规格一致）
+Pillow>=10,<12
 
 # 知乎浏览器通道（云端 tech-track 用）。
 # 本机跑赛道 A 时不需要它——本机走 local.py 的浏览器发布器，走 msedge。

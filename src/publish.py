@@ -680,6 +680,14 @@ def all_publishers(platforms_cfg: dict, settings: dict) -> list[BasePublisher]:
         ).lower() == "browser":
             out.append(_ZhihuBrowserAdapter(cfg, settings, secrets, dry))
             continue
+        # CSDN「浏览器面板」通道：saveArticle 直发在零发文/额度满等场景会返回
+        # code=200 但不落库（假成功），只有带封面走网页发布面板才是真发布。
+        # 云端 settings.csdn.mode=browser 走这条；本机默认仍走接口版。
+        if name == "csdn" and str(
+            (settings.get("csdn") or {}).get("mode", "")
+        ).lower() == "browser":
+            out.append(_CsdnBrowserAdapter(cfg, settings, secrets, dry))
+            continue
         out.append(cls(cfg, settings, secrets, dry))
     return out
 
@@ -728,3 +736,89 @@ class _ZhihuBrowserAdapter(BasePublisher):
             )
         except Exception as e:
             return Result(self.name, "failed", detail=f"{type(e).__name__}: {e}")
+
+
+class _CsdnBrowserAdapter(BasePublisher):
+    """CSDN 浏览器面板发布器（云端赛道 A 用）。
+
+    为什么不用接口直发：实测 `saveArticle status=1` 会回 `code=200 msg=success`
+    但文章不落库、额度也不扣（假成功），会把台账记成「已发」导致真稿被去重跳过。
+    网页发布面板是唯一验证过真发布的路径（2026-11-11 手动发一篇「发布成功！正在审核中」），
+    且「添加封面」是红星必填项 —— 封面由本适配器按当天项目动态准备。
+    """
+
+    name = "csdn"
+
+    def __init__(self, cfg: dict, settings: dict, secrets: dict, dry_run: bool):
+        super().__init__(cfg, settings, secrets, dry_run)
+
+    def required(self) -> list[str]:
+        return ["CSDN_COOKIE"]
+
+    def _cover_path(self, article: dict) -> str:
+        """为当天项目准备封面：GitHub opengraph → 统一裁成 1200×675 JPG。
+
+        2026-11-11 实测：手动发布成功用的封面正是 1200×675 的 JPG；
+        直接喂 opengraph 的 PNG 原图时 CSDN 上传不落库。所以必须先转格式，
+        规格对齐后再交给浏览器通道。每天项目不同 → 封面不同。
+        下载/转换失败时退回仓库里那张已验证可发布的 JPG。
+        """
+        repo = str(article.get("repo") or "").strip()
+        out = ROOT / "state" / "csdn_cover.jpg"
+        if repo:
+            try:
+                import io
+                from PIL import Image
+                r = requests.get(
+                    f"https://opengraph.githubassets.com/1/{repo}",
+                    headers={"User-Agent": "Mozilla/5.0"}, timeout=25)
+                if r.status_code == 200 and len(r.content) > 1000:
+                    im = Image.open(io.BytesIO(r.content)).convert("RGB")
+                    tw, th = 1200, 675
+                    w, h = im.size
+                    scale = max(tw / w, th / h)
+                    im = im.resize((int(w * scale) + 1, int(h * scale) + 1),
+                                   Image.LANCZOS)
+                    w, h = im.size
+                    left, top = (w - tw) // 2, (h - th) // 2
+                    im = im.crop((left, top, left + tw, top + th))
+                    out.parent.mkdir(parents=True, exist_ok=True)
+                    im.save(str(out), "JPEG", quality=88)
+                    return str(out)
+            except Exception:
+                pass
+        fallback = ROOT / "drafts" / "2026-11-10" / "wordcraft-csdn-cover.jpg"
+        return str(fallback) if fallback.exists() else ""
+
+    def publish(self, article: dict) -> Result:
+        if self.dry_run:
+            return Result(self.name, "dry_run",
+                          detail="CSDN 浏览器通道：云端需装 Playwright + Chromium，"
+                                 "dry_run 不启动浏览器")
+        if not (self.secrets.get("CSDN_COOKIE") or "").strip():
+            return Result(self.name, "skipped", detail="缺少 Secrets: CSDN_COOKIE")
+        cover = self._cover_path(article)
+        if not cover:
+            return Result(self.name, "failed",
+                          detail="封面不可用：opengraph 下载失败且仓库内无备用封面")
+        try:
+            from .csdn_browser import CsdnBrowserPublisher
+        except Exception as e:
+            return Result(self.name, "failed",
+                          detail=f"无法加载 CSDN 浏览器发布器（缺 playwright？）：{type(e).__name__}")
+        bcfg = dict(self.settings.get("browser") or {})
+        bcfg.setdefault("channel", "")   # 云端 Linux runner 用自带 chromium
+        pub = CsdnBrowserPublisher(browser_cfg=bcfg, root=ROOT)
+        try:
+            return pub.publish_browser(
+                article,
+                title=self.title(article),
+                body=article.get("markdown", ""),
+                brief=self.brief(article),
+                tags=self.tags(article),
+                cover=cover,
+            )
+        except Exception as e:
+            return Result(self.name, "failed", detail=f"{type(e).__name__}: {e}")
+        finally:
+            pub.close()
