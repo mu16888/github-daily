@@ -1,19 +1,20 @@
-"""仿人工发布时间调度：每天一个「确定性但不同」的发布时刻。
+"""发布时间调度闸门：支持两种模式，由环境变量 SCHEDULE_MODE 选择。
 
-GitHub Actions 的 cron 只能写固定时刻，写不出「每天随机」。做法是：
+  target（默认，手动回退用）
+      cron 每 15 分钟唤醒 -> HMAC-SHA256(日期+盐) 算出当天唯一目标时刻
+      -> 没到点空跑 / 到点放行 / 可 sleep 到精确秒
+      -> 发完记 last_dispatched，当天后续唤醒全部跳过。
+      确定性保证某次唤醒被丢时，下一次算出的仍是同一目标，能立即补发。
 
-    cron 每 15 分钟唤醒一次
-      -> 本模块用 HMAC-SHA256(日期 + 盐) 确定性地算出当天唯一目标时刻
-      -> 没到点：立即空跑退出（不抓 GitHub、不发文章）
-      -> 到点：放行，并可选 sleep 到精确的分钟/秒再发
-      -> 发完在台账里记 last_dispatched，当天后续唤醒全部跳过
-
-确定性是关键：某次唤醒被取消、排队延迟或失败时，下一次唤醒算出的仍是
-同一个目标时刻，会立即补发，不会漏发，也不会因为「重新随机」而重复发。
+  once_daily（云端 tech-track 用，2026-11-11 起）
+      cron 每天只唤醒一次（北京 09:53）-> 当天台账没派发过就直接放行。
+      不比对目标时刻、不 sleep。原因是 GitHub 在高频 schedule 上会丢
+      排队任务，实测 2026-11-11 一整天 8 次唤醒全部没触发；单棒更可靠。
 
 用法：
-    python -m src.schedule --check --align     # CI 闸门，写 GITHUB_OUTPUT
-    python -m src.schedule --preview 14        # 预览未来 14 天的发布时刻
+    python -m src.schedule --check --align     # CI 闸门（target 模式），写 GITHUB_OUTPUT
+    SCHEDULE_MODE=once_daily python -m src.schedule --check   # 云端单棒闸门
+    python -m src.schedule --preview 14        # 预览未来 14 天的目标时刻
     python -m src.schedule --check --force     # 忽略闸门，立即放行（手动触发）
 """
 from __future__ import annotations
@@ -99,8 +100,17 @@ def target_for(date: dt.date, cfg: dict) -> dt.datetime:
     return (local - offset).replace(tzinfo=UTC)
 
 
-def decide(now: dt.datetime, cfg: dict, state: dict, force: bool = False) -> tuple[str, int, dt.datetime | None]:
-    """判断这一棒该做什么，返回 (action, wait_seconds, target_utc)。"""
+def decide(now: dt.datetime, cfg: dict, state: dict, force: bool = False,
+           mode: str = "target") -> tuple[str, int, dt.datetime | None]:
+    """判断这一棒该做什么，返回 (action, wait_seconds, target_utc)。
+
+    mode:
+      target     原「每天一个确定性目标时刻」：cron 每 15 分钟唤醒，到点或
+                 可补发才放行（daily.yml 手动回退时仍用这套）。
+      once_daily 单棒模式：cron 每天只唤醒一次，只要当天台账没派发过就立即
+                 放行，不比对目标时刻、不 sleep。少一层不确定，也不会因为
+                 GitHub 丢掉某次唤醒就整天不发。由环境变量 SCHEDULE_MODE 开启。
+    """
     if not cfg.get("enabled", True):
         return "off", 0, None
     if now.tzinfo is None:
@@ -113,6 +123,8 @@ def decide(now: dt.datetime, cfg: dict, state: dict, force: bool = False) -> tup
         return "run", 0, target
     if (state.get("schedule") or {}).get("last_dispatched") == date.isoformat():
         return "done", 0, target
+    if mode == "once_daily":
+        return "run", 0, target
     if now < target:
         poll = max(5, int(cfg.get("poll_minutes", 15)))
         # 只有目标落在「本次唤醒 ~ 下一次唤醒」之间，才由这一棒 sleep 到点；
@@ -173,12 +185,14 @@ def ci_check(force: bool, align: bool) -> int:
     cfg = load_config()
     state = load_state()
     now = dt.datetime.now(UTC)
-    action, wait, target = decide(now, cfg, state, force)
+    mode = (os.environ.get("SCHEDULE_MODE") or "target").strip().lower()
+    action, wait, target = decide(now, cfg, state, force, mode=mode)
     tz = local_tz(cfg)
     info = {
         "now_utc": now.isoformat(timespec="seconds"),
         "target_local": target.astimezone(tz).isoformat(timespec="seconds") if target else None,
         "action": action,
+        "mode": mode,
     }
     should = action == "run"
 
@@ -187,7 +201,7 @@ def ci_check(force: bool, align: bool) -> int:
         print(f"[gate] 今天目标 {info['target_local']}，等待 {wait}s 到点再发", flush=True)
         time.sleep(wait)
         # sleep 期间可能有并发的补发已经完成，重新读台账再确认一次
-        action2, _, _ = decide(dt.datetime.now(UTC), cfg, load_state(), False)
+        action2, _, _ = decide(dt.datetime.now(UTC), cfg, load_state(), False, mode=mode)
         if action2 == "done":
             should = False
             action = "done"

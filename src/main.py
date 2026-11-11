@@ -187,7 +187,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         print(f"      {note}")
 
     # 只有「闸门放行的那一棒」（CI 传 --dispatched）才占住当天唯一名额并立即落盘：
-    # (a) 后续 15 分钟一次的唤醒直接空跑，不重复抓 GitHub / 不重复发文；
+    # (a) 当天后续任何唤醒 / 手动重跑都会读到 done 直接空跑，不重复抓 GitHub / 不重复发文；
     # (b) 即使成稿或发布阶段抛异常，也不会因台账没写而重复发文。
     # 抓候选本身失败时不写，留给后面的唤醒重试。本地直接跑不传该参数，
     # 因此本地演练完全不碰台账，也不会误把「今天已派发」推上去挡住云端。
@@ -216,7 +216,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             files += archive_rewrite(article, args.date)
         drafts.append({
             "repo": repo.full_name, "title": article["title"],
-            "platform_titles": article["titles"], "keywords": article["keywords"],
+            # rewrite 模式下真正发出去的是新结构稿的标题，台账要显示它而不是 legacy 标题
+            "platform_titles": (
+                {**article["titles"], **{p: a["title"] for p, a in
+                 (article.get("rewrite") or {}).items() if p in article["titles"]}}
+                if source == "rewrite" else article["titles"]
+            ),
+            "keywords": article["keywords"],
             "score": repo.score, "files": files,
             "content_source": source,
             "topic": article.get("topic", {}),

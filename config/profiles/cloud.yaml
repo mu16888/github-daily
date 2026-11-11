@@ -10,7 +10,9 @@ publish:
   # 云端是真发。本机档案仍是 true，两边不互相改。
   dry_run: false
   enabled: true
-  content_source: legacy
+  # 2026-11-11 切到新结构稿：判断开场 / 能带走的清单 / 最小一步，
+  # 五平台标题与结构各自轮换，不再每天一份「项目说明书」。
+  content_source: rewrite
 
 daily:
   # 云端一天 1 篇，三平台各发同一篇（同一稿多投，不是三篇不同稿）

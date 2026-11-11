@@ -6,13 +6,15 @@ name: tech-track
 #   daily.yml      旧流水线，跑 src/main.py（默认 profile），保留作为回退
 #   tech-track.yml 本流水线，跑 src/main.py --profile cloud（真发 + 赛道 A 三平台）
 #
-# 触发：与 daily.yml 相同的 cron 节奏（每 15 分钟醒一次），
-#       由 src/schedule.py 的时间闸门决定当天唯一那一棒是否放行。
-#       两个 workflow 共享同一份 schedule.last_dispatched 台账，所以不会重复发文。
+# 触发：每天北京时间 09:53 只唤醒一次（UTC 01:53，避开整点高峰）。
+#       闸门用 once_daily 模式：当天台账没派发过就直接发，不再依赖
+#       「每 15 分钟唤醒 + 算当天目标时刻」那套 —— GitHub 在高频 schedule
+#       上会直接丢排队任务，2026-11-11 实测一整天 8 次唤醒全部没触发。
+#       改 cron 的提交会让 GitHub 重新注册/激活这个 workflow 的 schedule。
 
 on:
   schedule:
-    - cron: '8,23,38,53 0-3 * * *'
+    - cron: '53 1 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -65,6 +67,8 @@ jobs:
           ZHIHU_APP_SECRET: ${{ secrets.ZHIHU_APP_SECRET }}
           PIPELINE_DRY_RUN: ${{ inputs.dry_run || 'false' }}
           SCHEDULE_FORCE: ${{ inputs.force && 'true' || 'false' }}
+          # 单棒闸门：当天台账没派发过就直接发，不比对「当天目标时刻」
+          SCHEDULE_MODE: once_daily
         run: |
           set -u
           FORCE_FLAG=""

@@ -52,7 +52,7 @@ schedule:
   window_start: '08:30'     # 可发布窗口（本地时间），目标时刻只落在窗口内
   window_end: '10:45'
   weekend_delay_minutes: 45 # 周六日整体顺延，更像真人作息
-  poll_minutes: 15          # 必须与 .github/workflows/daily.yml 的 cron 间隔一致
+  poll_minutes: 15          # 仅 target 模式（daily.yml 手动回退）用；once_daily 不读它
   salt: 'github-daily-human-2026-11'   # 改这个字符串，整套每日时刻序列就换一套
   avoid_round_minutes: true # 避开整点 / 整 5 分 / 整 10 分，秒也避开 0
   stagger_min_seconds: 90   # 三平台之间的错峰下限

@@ -13,10 +13,12 @@
 """
 from __future__ import annotations
 
+import hashlib
 import re
 from typing import Any
 
 from .discover import Repo
+from .hooks import extract_selling_points, selling_point
 from .seo import load_seo
 from .tones import BANNED, PLATFORMS, _fit, _fit_bytes
 from .topics import choose, guard, labels_for, load_topics
@@ -27,10 +29,20 @@ SHAPES: dict[str, dict[str, Any]] = {
         "sections": ["judgement", "what", "takeaway", "first_step", "boundary", "labels"],
         "code": True, "table": True, "length": [900, 2200],
         "title_max": 50, "title_bytes": False,
+        # 10 组句式按 (日期, 平台) 轮换。多数句式带 {selling_point}——
+        # 它是运行时从 README 抽出的可核查事实（名词短语），不是万能形容词。
+        # 末尾两条是极短兜底：项目名很长时也保证标题不被硬截成半句。
         "titles": [
+            "{selling_point}：{name} 值不值得花时间看",
+            "{name} 凭什么被收藏 {stars} 次：{selling_point}",
+            "{selling_point}，这个 {language} 项目叫 {name}",
+            "先别急着装 {name}：{selling_point}",
+            "{name} 解决什么麻烦：{selling_point}",
+            "关于 {name}，最值得先弄清的是 {selling_point}",
+            "{selling_point}，{name} 说明里写了这些",
+            "{name}：{selling_point}，再看要不要装",
             "{name} 值不值得装：先看清它管什么",
             "{name} 这类工具，装之前值得先想一件事",
-            "{name} 能解决什么，从仓库说明里看",
         ],
         # 摘要独立成句，不从导语硬裁，避免公众号被截成半句话
         "brief": "{name} 值不值得花时间，先看它管什么。",
@@ -43,9 +55,16 @@ SHAPES: dict[str, dict[str, Any]] = {
         "code": True, "table": False, "length": [700, 1600],
         "title_max": 80, "title_bytes": False,
         "titles": [
+            "{name} 安装与上手：{selling_point}",
+            "{selling_point}，{name} 怎么装怎么跑",
+            "{name} 使用笔记：{selling_point}，附现成安装步骤",
+            "先跑起来再说：{name} 的 {selling_point}",
+            "{name} 怎么用，先看这一点：{selling_point}",
+            "{name} 上手：{selling_point}，附安装步骤",
+            "{name} 上手：{selling_point}，照着说明走",
+            "{name} 能用的几条：{selling_point}",
             "{name} 怎么用：说明里能直接带走的几条",
             "{name} 上手清单：先记这几条就够了",
-            "{name} 安装与上手：把能用的部分挑出来",
         ],
         "brief": "{name} 能用的几条，都从说明里挑出来了。",
         "lead_suffix": "说明里给了几条能直接用的。",
@@ -57,9 +76,18 @@ SHAPES: dict[str, dict[str, Any]] = {
         "code": True, "table": True, "length": [900, 2000],
         "title_max": 50, "title_bytes": False,
         "titles": [
+            # 「安装教程」「常见问题」是 guardrails.legacy_sections 里的禁用词，
+            # 一旦出现在标题会让整份新结构稿被护栏判失败、静默退回旧版，别用。
+            "{name} 安装步骤：{selling_point}",
+            "{name} 怎么用：{selling_point}，附上手步骤",
+            "{name} 功能说明与安装：{selling_point}",
+            "{selling_point}，{name} 从安装到第一步",
+            "{name} 使用说明：{selling_point}，附安装步骤",
+            "{name} 上手教程，先看这一点：{selling_point}",
+            "{name} 是什么、怎么装：{selling_point}",
+            "{selling_point}：{name} 功能与安装详解",
             "{name} 怎么用：一份能带走的上手清单",
             "{name} 装之前，先看这几条能用的",
-            "{name} 使用说明：从仓库里挑出能直接用的",
         ],
         "brief": "{name} 怎么用，先看能查到的事实。",
         "lead_suffix": "怎么用、从哪一步开始，看仓库里能查到的东西。",
@@ -71,9 +99,16 @@ SHAPES: dict[str, dict[str, Any]] = {
         "code": False, "table": False, "length": [400, 900],
         "title_max_bytes": 64, "title_bytes": True,
         "titles": [
+            "{name}：{selling_point}",
+            "{selling_point}，值得看一眼",
+            "{name} 值不值得装",
+            "这个 {language} 工具，先看能用的",
+            "{name}，先弄清它管什么",
+            "{name} 的 {selling_point}",
             "{name}：先想清楚它管什么",
             "这个开源工具，先别急着装",
             "{name}，值不值得花十分钟",
+            "先看 {name} 能给你什么",
         ],
         "brief": "先弄清 {name} 管什么，再决定用不用。",
         "lead_suffix": "今天说个能自己试试的小工具。",
@@ -85,9 +120,16 @@ SHAPES: dict[str, dict[str, Any]] = {
         "code": False, "table": False, "length": [300, 700],
         "title_max": 30, "title_bytes": False,
         "titles": [
+            "{name}：{selling_point}",
+            "{selling_point}，这个工具能干啥",
             "{name} 是干什么的，先说结论",
-            "GitHub 上这个工具，先看能带走啥",
+            "GitHub 上这个工具：{selling_point}",
+            "{name}，值不值得花几分钟",
+            "{selling_point}，先看懂再装",
+            "关于 {name}：{selling_point}",
             "{name}：先弄清它管什么",
+            "这个开源项目，先看能带走啥",
+            "先看结论：{name} 管什么",
         ],
         "brief": "{name} 是干什么的，先看结论。",
         "lead_suffix": "先给结论，再看怎么弄。",
@@ -140,6 +182,9 @@ def _facts(repo: Repo) -> dict[str, Any]:
         "features": (repo.features_excerpt or "").strip(),
         "headings": _headings(getattr(repo, "readme", "") or ""),
         "signals": list(repo.signals or []),
+        # 运行时从 README 抽出的可核查事实，供标题与「能带走的清单」共用
+        "selling_point": selling_point(repo),
+        "selling_points": extract_selling_points(repo),
     }
 
 
@@ -190,20 +235,18 @@ def _blocks(f: dict, plan, cfg: dict, shape: dict, topic_zh: dict) -> dict[str, 
             f"| 建库 / 最近更新 | {f['created']} / {f['pushed']} |"
         )
 
-    # 能带走的清单：README 功能列表原文 > README 真实章节名 > 可核查字段。
+    # 能带走的清单：只读运行时从 README 抽出的中文可核查信号。
+    # 旧版把 README 英文列表原文整段贴进正文，中文导语配英文条目，读起来像机器抓取；
+    # 现在一律输出中文短句，原文仍留在 drafts/ 归档里，随时可回查。
     # 绝不用 score() 的打分元信号（「写了说明文档」这类）冒充读者能带走的东西。
-    items = [] if plain else _list_items(f["features"])
-    if not items and not plain and f["headings"]:
-        items = list(f["headings"])
-    if items:
-        takeaway = "\n".join("- " + s for s in items[:3])
-    else:
-        takeaway = "\n".join("- " + s for s in [
+    items = list(f.get("selling_points") or [])[:3]
+    if not items:
+        items = [
             f"主要用 {f['language']} 写",
             f"GitHub 上 {f['stars']} 人收藏",
             f"用的是 {f['license']} 协议",
-            f"建库 {f['created']}，最近更新 {f['pushed']}",
-        ][:3])
+        ]
+    takeaway = "\n".join("- " + s for s in items)
 
     if f["installs"] and shape["code"]:
         step = (
@@ -246,31 +289,53 @@ SECTION_TITLES = {
 }
 
 
-def _title(platform: str, shape: dict, f: dict, date: str) -> tuple[str, bool]:
-    """按 (date, platform) 确定性轮换；优先选放得下且完整的句式，不硬截半句。"""
-    day = int(date.replace("-", "")) if date.replace("-", "").isdigit() else 0
-    salt = sum(ord(c) for c in platform)
+def _title(platform: str, shape: dict, f: dict, date: str,
+           avoid: set[str] | None = None) -> tuple[str, bool]:
+    """按 (date, platform) 确定性轮换；优先选放得下且完整的句式，不硬截半句。
+
+    两点针对「标题没吸引力 / 三篇趋同」：
+    1. 含真实信号 {selling_point} 的句式优先轮换，纯兜底句式只在放不下时才用；
+    2. 同一天各平台按 salt 取不同的真实信号，避免三篇挂同一个钩子。
+    """
+    # 用 (日期, 平台) 的确定性散列代替 day % N：后者按天线性递增，
+    # 模板数 N=8 时每 8 天整套标题原样复现，正是「每天一个样」的反面。
+    digest = hashlib.md5(f"{date}|{platform}".encode("utf-8")).hexdigest()
+    # 模板起点与钩子索引必须取散列的不同段：都取低几位时两者完全相关，
+    # 组合数从 8×4 塌成 8，会出现连续几天撞同一条标题。
+    seed = int(digest[:8], 16)
+    point_seed = int(digest[8:16], 16)
+    vals = dict(f)
+    pts = [p for p in (f.get("selling_points") or []) if p]
+    if pts:
+        vals["selling_point"] = pts[point_seed % len(pts)]
+
     pats = shape["titles"]
-    ordered = [pats[(day + salt + i) % len(pats)] for i in range(len(pats))]
+    core = [p for p in pats if "{selling_point}" in p]
+    fallback = [p for p in pats if "{selling_point}" not in p]
+    ordered = ([core[(seed + i) % len(core)] for i in range(len(core))]
+               if core else []) + fallback
     # 兜底一定放得下，避免长项目名把标题硬截成半句
     ordered.append("{name}")
     bytes_mode = bool(shape.get("title_bytes"))
     limit = int(shape.get("title_max_bytes") or shape.get("title_max", 50))
     for pat in ordered:
-        cand = pat.format(**f)
+        cand = pat.format(**vals)
+        if cand in (avoid or set()):   # 同一天别的平台已经用了这句，换下一条
+            continue
         size = len(cand.encode("utf-8")) if bytes_mode else len(cand)
         if size <= limit:
             return cand, False
-    cand = ordered[0].format(**f)
+    cand = ordered[0].format(**vals)
     return (_fit_bytes(cand, limit) if bytes_mode else _fit(cand, limit)), True
 
 
 def _render_one(platform: str, shape: dict, f: dict, plan,
-                cfg: dict, date: str, topic_zh: dict) -> dict:
+                cfg: dict, date: str, topic_zh: dict,
+                avoid: set[str] | None = None) -> dict:
     b = _blocks(f, plan, cfg, shape, topic_zh)
     # 开场 / 收尾按平台轮换，避免五份稿子只有中段不同
     local = choose(date, cfg, salt=platform)
-    title, fitted = _title(platform, shape, f, date)
+    title, fitted = _title(platform, shape, f, date, avoid=avoid)
     lead = local.opening + shape["lead_suffix"]
     brief = shape["brief"].format(**f)
     brief = _fit_bytes(brief, 120) if shape.get("title_bytes") else _fit(brief, 100)
@@ -332,10 +397,14 @@ def render_rewrite(repo: Repo, date: str, seo_cfg: dict | None = None,
     plan = choose(date, cfg)
     f = _facts(repo)
     articles = {}
+    used: set[str] = set()
     for platform in PLATFORMS:
         shape = SHAPES.get(platform)
         if shape:
-            articles[platform] = _render_one(platform, shape, f, plan, cfg, date, topic_zh)
+            art = _render_one(platform, shape, f, plan, cfg, date, topic_zh,
+                              avoid=used)
+            articles[platform] = art
+            used.add(art["title"])
 
     # 兜底：任何一个渲染器写错，也不能把禁用词或旧说明书节标题放出去
     banned_all = tuple(BANNED) + tuple((cfg.get("guardrails") or {}).get("legacy_sections", ()))

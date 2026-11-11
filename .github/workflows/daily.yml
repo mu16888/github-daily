@@ -1,11 +1,10 @@
 name: daily-github-picks
 
-# Wake every 15 min (UTC 00:08-03:53 = 08:08-11:53 Beijing).
-# src/schedule.py derives one deterministic-but-varying target time per day;
-# only the wake-up that reaches it publishes. Off-peak minutes avoid queueing.
+# 回退流水线（旧内容层 / 默认 profile），仅手动 workflow_dispatch 触发。
+# 2026-11-11 关掉自动 schedule：它与 tech-track 共用 concurrency 组和
+# schedule.last_dispatched 台账，同时唤醒会互相抢占，且旧档可能重复发文。
+# 赛道 A 的日常自动发布统一由 tech-track.yml 承担。
 on:
-  schedule:
-    - cron: '8,23,38,53 0-3 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
