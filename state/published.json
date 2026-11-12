@@ -43,10 +43,20 @@
     "agent0ai/agent-zero": {
       "first_date": "2026-11-10",
       "platforms": {}
+    },
+    "nesquena/hermes-webui": {
+      "first_date": "2026-11-12",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2104175988154356185",
+          "at": "2026-11-12T03:37:52+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-10",
+    "last_dispatched": "2026-11-12",
     "last_mode": "live",
     "history": [
       "2026-11-09",
@@ -58,7 +68,8 @@
       "2026-11-10",
       "2026-11-10",
       "2026-11-10",
-      "2026-11-10"
+      "2026-11-10",
+      "2026-11-12"
     ]
   }
 }

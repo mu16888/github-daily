@@ -1,9 +1,9 @@
 {
-  "date": "2026-11-10",
+  "date": "2026-11-12",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
-  "content_source": "legacy",
+  "content_source": "rewrite",
   "quota": {
     "zhihu": 1,
     "juejin": 1,
@@ -11,36 +11,39 @@
   },
   "drafts": [
     {
-      "repo": "agent0ai/agent-zero",
-      "title": "agent-zero 解决什么问题？功能、安装与上手",
+      "repo": "nesquena/hermes-webui",
+      "title": "hermes-webui 解决什么问题？功能、安装与上手",
       "platform_titles": {
-        "zhihu": "agent-zero 解决什么问题？19822 Star 的开源项目，附安装与上手",
-        "juejin": "agent-zero 解决什么问题？19822 Star 的开源项目，附完整安装命令",
-        "csdn": "agent-zero 解决什么问题？19822 Star 的开源项目，功能与安装教程"
+        "zhihu": "hermes-webui：不用 build 的实现，再看要不要装",
+        "juejin": "hermes-webui 上手：离线可用，附安装步骤",
+        "csdn": "hermes-webui 上手教程，先看这一点：md / txt / yaml 格式支持"
       },
-      "keywords": [
-        "AI"
-      ],
-      "score": 15,
+      "keywords": [],
+      "score": 16,
       "files": [
-        "drafts/2026-11-10/agent0ai__agent-zero.md",
-        "drafts/2026-11-10/agent0ai__agent-zero.html"
+        "drafts/2026-11-12/nesquena__hermes-webui.md",
+        "drafts/2026-11-12/nesquena__hermes-webui.html",
+        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.zhihu.md",
+        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.juejin.md",
+        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.csdn.md",
+        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.wechat.md",
+        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.toutiao.md"
       ],
-      "content_source": "legacy",
+      "content_source": "rewrite",
       "topic": {
-        "id": "judgement_first",
-        "hook_type": "判断 / 冲突",
-        "opening_index": 0,
+        "id": "takeaway_list",
+        "hook_type": "清单 / 实操",
+        "opening_index": 2,
         "sections": [
           "judgement",
           "what",
-          "boundary",
-          "first_step",
           "takeaway",
+          "first_step",
+          "boundary",
           "labels"
         ],
-        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
-        "date": "2026-11-10"
+        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-12"
       },
       "rewrite_guard_ok": true
     }
@@ -48,28 +51,21 @@
   "publish": [
     {
       "platform": "zhihu",
-      "status": "skipped",
-      "url": "",
-      "detail": "今日配额已满（1/1，calendar_day），跳过以防重复发文",
+      "status": "published",
+      "url": "https://zhuanlan.zhihu.com/p/2104175988154356185",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2104175988154356185 | articles/drafts http=200 | v4/content/publish http=200",
       "http_status": null
     },
     {
       "platform": "juejin",
-      "status": "skipped",
-      "url": "",
-      "detail": "今日配额已满（1/1，calendar_day），跳过以防重复发文",
-      "http_status": null
-    },
-    {
-      "platform": "csdn",
       "status": "failed",
       "url": "",
-      "detail": "http=200 code=200 msg=success | 回查未通过：回查未找到匹配标题（疑似额度满未落库）",
+      "detail": "draft_id=7706826190912749608 | http=200 | publish code=2 msg=参数错误",
       "http_status": 200
     }
   ],
-  "published_count": 0,
+  "published_count": 1,
   "drafted_count": 0,
-  "skipped_count": 2,
+  "skipped_count": 0,
   "failed_count": 1
 }
