@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-12",
+  "date": "2026-11-13",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,39 +11,39 @@
   },
   "drafts": [
     {
-      "repo": "nesquena/hermes-webui",
-      "title": "hermes-webui 解决什么问题？功能、安装与上手",
+      "repo": "heydamir/unslop",
+      "title": "unslop 解决什么问题？功能、安装与上手",
       "platform_titles": {
-        "zhihu": "hermes-webui：不用 build 的实现，再看要不要装",
-        "juejin": "hermes-webui 上手：离线可用，附安装步骤",
-        "csdn": "hermes-webui 上手教程，先看这一点：md / txt / yaml 格式支持"
+        "zhihu": "先别急着装 unslop：MCP server 接口",
+        "juejin": "unslop 上手：15277 Star，附安装步骤",
+        "csdn": "unslop 上手教程，先看这一点：15277 Star"
       },
       "keywords": [],
       "score": 16,
       "files": [
-        "drafts/2026-11-12/nesquena__hermes-webui.md",
-        "drafts/2026-11-12/nesquena__hermes-webui.html",
-        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.zhihu.md",
-        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.juejin.md",
-        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.csdn.md",
-        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.wechat.md",
-        "drafts/2026-11-12/rewrite/nesquena__hermes-webui.toutiao.md"
+        "drafts/2026-11-13/heydamir__unslop.md",
+        "drafts/2026-11-13/heydamir__unslop.html",
+        "drafts/2026-11-13/rewrite/heydamir__unslop.zhihu.md",
+        "drafts/2026-11-13/rewrite/heydamir__unslop.juejin.md",
+        "drafts/2026-11-13/rewrite/heydamir__unslop.csdn.md",
+        "drafts/2026-11-13/rewrite/heydamir__unslop.wechat.md",
+        "drafts/2026-11-13/rewrite/heydamir__unslop.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "takeaway_list",
-        "hook_type": "清单 / 实操",
-        "opening_index": 2,
+        "id": "judgement_first",
+        "hook_type": "判断 / 冲突",
+        "opening_index": 0,
         "sections": [
           "judgement",
           "what",
-          "takeaway",
-          "first_step",
           "boundary",
+          "first_step",
+          "takeaway",
           "labels"
         ],
-        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-12"
+        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
+        "date": "2026-11-13"
       },
       "rewrite_guard_ok": true
     }
@@ -52,20 +52,13 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2104175988154356185",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2104175988154356185 | articles/drafts http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2104591517855790364",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2104591517855790364 | articles/drafts http=200 | v4/content/publish http=200",
       "http_status": null
-    },
-    {
-      "platform": "juejin",
-      "status": "failed",
-      "url": "",
-      "detail": "draft_id=7706826190912749608 | http=200 | publish code=2 msg=参数错误",
-      "http_status": 200
     }
   ],
   "published_count": 1,
   "drafted_count": 0,
   "skipped_count": 0,
-  "failed_count": 1
+  "failed_count": 0
 }

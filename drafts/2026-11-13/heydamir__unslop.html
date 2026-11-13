@@ -1,0 +1,56 @@
+<h1>unslop 解决什么问题？功能、安装与上手</h1>
+<p>unslop 在 GitHub 上给自己的简介是「A Claude skill that turns vibecoded, AI-looking UI into a de」，15277 Star 的开源项目。要不要装，先看它解决什么问题跟你对不对得上。</p>
+<h2>它解决什么问题</h2>
+<p>仓库说明没专门写「为什么要做这个」，能看的只有作者自己那几句话。</p>
+<p>说明开头是这么写的。</p>
+<blockquote><p>Created by Damir Sokolovsky (<a href="https://x.com/heydamir">@heydamir</a>), who started the <a href="https://x.com/heydamir/status/2115063463063998736">Unslopping series</a> on X.</p></blockquote>
+<blockquote><p>unslop is a skill for Claude Code, Codex and Google Antigravity that turns vibecoded, AI-looking UI into a designed interface with its own character. It finds the slop first, the purple gradients, glows, emoji labels, shouty copy and uneven spacing, then sets a direction from your product and fixes the screen pass by pass like a designer doing a redline review. It works in whatever your screen is built with, like Next.js, React, Vue, Svelte, Tailwind or plain HTML and CSS, on dashboards, apps and landing pages, and even on a live site when all you have is a link.</p></blockquote>
+<p>仓库简介就一句。</p>
+<blockquote><p>A Claude skill that turns vibecoded, AI-looking UI into a designed interface</p></blockquote>
+<p>挂的标签是 没标，能看出它大概跟什么沾边。</p>
+<h2>这是个什么项目</h2>
+<blockquote><p>A Claude skill that turns vibecoded, AI-looking UI into a designed interface</p></blockquote>
+<p>主要用 <strong>JavaScript</strong> 写，GitHub 上攒了 <strong>15277</strong> 颗星（就是收藏数），用的是 CC-BY-4.0 协议。<br>协议管的是你能不能拿去商用、改了要不要公开，用之前扫一眼。仓库地址：<a href="https://github.com/heydamir/unslop">heydamir/unslop</a>。</p>
+<h2>能做什么</h2>
+<p>作者在说明里列了这些。</p>
+<ul><li><strong>Audit.</strong> Lists every sign of slop with where it lives.</li><li><strong>Direction.</strong> Character, world, the one or two moments that carry the color, and a signature detail, all taken from your product.</li><li><strong>Passes.</strong> Spacing, color, icons, copy, type, layout, details, visuals and motion, in that order.</li><li><strong>Visuals.</strong> Shows your product instead of a glossy blob. When a hero needs a scene or an object, it can generate one through an image service like fal, Replicate, OpenAI images or Higgsfield. If none is connected, it offers to connect one as an MCP server, and it shows the prompt and asks before every paid generation. Dashboards and apps rarely need one.</li><li><strong>Story video.</strong> A square video under 10 seconds of your screen unslopping itself, ready to post. It needs Playwright and ffmpeg.</li></ul>
+<p>Try it on the two vibecoded screens in [examples](examples).</p>
+<h2>新手装起来麻烦吗</h2>
+<p>第一次上手最容易卡在两件事。要不要自己把源码做成能跑的软件，说明里有没有现成命令。这个仓库查到的是这些。</p>
+<ul><li>写了说明文档</li><li>说明写得够长，不是三两句就完事</li><li>写了 Quick Start（快速上手）和怎么装</li><li>有能直接复制的安装命令</li><li>标了 CC-BY-4.0 协议，用起来有规矩</li><li>不用自己把源码做成软件</li><li>不用另外配数据库、账号或者付费服务</li><li>15277 颗星，不算冷门</li></ul>
+<h2>安装教程</h2>
+<p>下面这些命令是仓库说明里现成的，复制下来就能跑。动手前顺手去仓库页面扫一眼，作者可能改过版本。</p>
+<pre><code>npm install -D playwright
+npx playwright install chromium</code></pre>
+<pre><code>git clone https://github.com/heydamir/unslop
+mkdir -p ~/.claude/skills &amp;&amp; cp -r unslop/skills/unslop ~/.claude/skills/</code></pre>
+<p>装不上先别急着重试。看看说明是不是改过命令，再看电脑上装没装它要的环境、版本对不对。</p>
+<h2>装完怎么上手</h2>
+<p>仓库说明里 Quick Start（快速上手）那部分写了这些。</p>
+<p>For Claude Code, copy the skill into your skills folder.</p>
+<p>For a single project, copy it into <code>.claude/skills/</code> inside that project instead.</p>
+<p>For Codex, ask it to install the skill straight from this repo.</p>
+<pre><code>$skill-installer install https://github.com/heydamir/unslop/tree/main/skills/unslop</code></pre>
+<p>Or copy it by hand into <code>~/.agents/skills/</code>, or into <code>.agents/skills/</code> inside a single project.</p>
+<pre><code class="language-bash">git clone https://github.com/heydamir/unslop
+mkdir -p ~/.agents/skills &amp;&amp; cp -r unslop/skills/unslop ~/.agents/skills/</code></pre>
+<p>For Google Antigravity, copy the skill into your skills folder.</p>
+<pre><code class="language-bash">git clone https://github.com/heydamir/unslop
+mkdir -p ~/.gemini/antigravity/skills &amp;&amp; cp -r unslop/skills/unslop ~/.gemini/antigravity/skills/</code></pre>
+<p>For a single project, copy it into <code>.agents/skills/</code> inside that project instead.</p>
+<p>To snapshot a live site or create a story video, install Playwright and its Chromium browser from the project directory where you run the skill:</p>
+<h2>项目档案</h2>
+<table><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody><tr><td>仓库</td><td><a href="https://github.com/heydamir/unslop">heydamir/unslop</a></td></tr><tr><td>收藏数</td><td>15277</td></tr><tr><td>主要用什么写</td><td>JavaScript</td></tr><tr><td>开源协议</td><td>CC-BY-4.0</td></tr><tr><td>标签</td><td>没标</td></tr><tr><td>创建时间</td><td>2026-10-29</td></tr><tr><td>最近更新</td><td>2026-11-08</td></tr><tr><td>数据记于</td><td>2026-11-13T07:08:24+00:00</td></tr></tbody></table>
+<h2>动手前留意</h2>
+<ul><li>项目还在改，命令隔段时间可能就不一样了。</li><li>CC-BY-4.0 协议。拿去商用或者改了再发，先看条款让不让。</li></ul>
+<h2>常见问题</h2>
+<p><strong>unslop 解决什么问题？</strong></p>
+<p>unslop 在仓库简介里写的是「A Claude skill that turns vibecoded, AI-looking UI into a de」。说明里写了缘由的，开头那段就是作者原话；没写的，就看这句简介和标签，别自己脑补。</p>
+<p><strong>unslop 怎么安装？</strong></p>
+<p>把说明里 Install 那段的命令复制下来跑一遍就行。装不上先看说明是不是改过，再看电脑上装没装它要的环境。</p>
+<p><strong>unslop 免费吗？</strong></p>
+<p>仓库标的是 CC-BY-4.0 协议，代码可以免费用。拿去做生意或者改了再发，先看条款让不让。</p>
+<p><strong>unslop 适合新手吗？</strong></p>
+<p>看两件事就够了。说明里有没有现成安装命令，要不要自己把源码做成软件。星星多不多跟这个没关系。</p>
+<p>---</p>
+<p>unslop 还在改，装之前记得翻一眼仓库说明。</p>

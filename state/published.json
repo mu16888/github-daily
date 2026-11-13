@@ -53,10 +53,20 @@
           "status": "published"
         }
       }
+    },
+    "heydamir/unslop": {
+      "first_date": "2026-11-13",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2104591517855790364",
+          "at": "2026-11-13T07:09:00+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-12",
+    "last_dispatched": "2026-11-13",
     "last_mode": "live",
     "history": [
       "2026-11-09",
@@ -69,7 +79,8 @@
       "2026-11-10",
       "2026-11-10",
       "2026-11-10",
-      "2026-11-12"
+      "2026-11-12",
+      "2026-11-13"
     ]
   }
 }
