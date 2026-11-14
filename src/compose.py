@@ -128,8 +128,8 @@ def compose(repo: Repo, date: str, cfg: dict, seo: dict | None = None) -> dict[s
     f = repo.facts()
     seo = seo or load_seo()
     s = seo_build(repo, date, seo)
-    # H1 用统一的通用式标题：痛点词前置，再带功能 / 安装 / 使用三个搜索长尾词
-    title = f"{name} 解决什么问题？功能、安装与上手"
+    # H1 用标题框架 v2 的判断式：不再写「解决什么问题？功能、安装与上手」。
+    title = f"{name} 适用边界：什么时候能用，什么时候别碰"
 
     signals = "\n".join(f"- {s}" for s in repo.signals) or "- 说明文档里能看的东西不多"
     installs = "\n".join(f"```\n{b}\n```" for b in repo.install_blocks)
