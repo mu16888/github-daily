@@ -30,6 +30,22 @@ def load_seo() -> dict:
     return yaml.safe_load((ROOT / "config" / "seo.yaml").read_text(encoding="utf-8")) or {}
 
 
+_TF_CACHE: dict = {}
+
+
+def _title_framework() -> dict:
+    """标题框架 v2 的禁用词与兜底句式；读不到返回空 dict，护栏静默停用。"""
+    if _TF_CACHE:
+        return _TF_CACHE
+    try:
+        d = yaml.safe_load((ROOT / "config" / "title_framework.yaml").read_text(encoding="utf-8")) or {}
+        if int((d.get("meta") or {}).get("version", 0)) >= 2:
+            _TF_CACHE.update(d)
+    except Exception:
+        pass
+    return _TF_CACHE
+
+
 def _hook(repo: Repo, seo: dict) -> str:
     h = seo["hooks"]
     found: list[str] = []
@@ -85,11 +101,28 @@ def build(repo: Repo, date: str, seo: dict) -> dict[str, Any]:
     # 用日期做确定性轮换：同一天所有平台用同一变体，跨天自动换样式
     variant = int(date.replace("-", "")) if date.replace("-", "").isdigit() else 0
 
+    # 标题框架 v2 护栏（2026-11-14）：模板先过禁用词，渲染后再过一次，
+    # 命中说明书体 / 虚荣数字 / 空判断就换下一条；全命中则用短判断句兜底。
+    # 配置文件缺失时护栏为空（退回原行为），不阻断流水线。
+    tf = _title_framework()
+    banned = [b for b in (tf.get("banned") or []) if b]
     titles, briefs = {}, {}
     for platform, pcfg in seo["platforms"].items():
-        tpls = pcfg["templates"]
-        tpl = tpls[variant % len(tpls)]
-        titles[platform] = _fit(tpl.format(**vals), int(pcfg["title_max"]))
+        tpls = [t for t in pcfg["templates"]
+                if not any(b in t for b in banned)] or pcfg["templates"]
+        chosen = None
+        for i in range(len(tpls)):
+            cand = tpls[(variant + i) % len(tpls)].format(**vals)
+            if not any(b in cand for b in banned):
+                chosen = cand
+                break
+        if chosen is None:
+            fb = ((tf.get("platforms") or {}).get(platform) or {}).get("titles") or []
+            chosen = next((t.format(**vals) for t in fb
+                           if not any(b in t for b in banned)), None)
+        if chosen is None:
+            chosen = (tf.get("fallbacks") or ["{name} 的适用边界，比功能更该先看"])[0].format(**vals)
+        titles[platform] = _fit(chosen, int(pcfg["title_max"]))
         briefs[platform] = pcfg["brief_template"].format(**vals)[: int(pcfg["brief_max"])]
 
     tags = seo["csdn_tag_template"].format(**vals).split(",")
