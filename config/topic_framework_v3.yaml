@@ -1,0 +1,142 @@
+# 话题框架 v3 · 赛道 A（技术 / AI 效率）
+# 设计依据（2026-11-14 实际加载的技能）：
+#   wechat-content-research  选题推导链 / 问题树 / 信源 S-A-B-C / 转换卡 / 评估 7 维
+#   gzh-mia-pipeline        标题承诺兑现 / F-I-H-D 事实分级 / 输出合同
+#   verify-before-claim     四级标记 ✅⚠️❓💭
+# 本文件驱动 src/topic_guard.py；与「标题框架 v2」分工：v2 管怎么说，v3 管说什么、凭什么说。
+# 修改本文件即改变护栏行为，无需改代码。
+
+meta:
+  version: 3
+  date: '2026-11-14'
+  track: tech
+  source_skills: [wechat-content-research, gzh-mia-pipeline, verify-before-claim]
+  principle: '话题必须给决策判断，不给功能说明；判断必须能追溯到上游信号与可核查证据'
+
+# 闸门开关。require_card=false 是**有意的渐进启用**：
+# 现有稿件没有话题卡，硬要求会直接让无人值守流水线零产出。
+# 待明早自动化稳定运行、话题卡齐全后改成 true 即收紧为硬闸门。
+gate:
+  enforce: true          # 有话题卡时，不合格是否阻断出稿
+  require_card: false    # 缺话题卡是否阻断；false=只警告（渐进期）
+  on_missing_card: warn  # warn | block
+
+# L0 话题支柱：选题必须落进其中一根，落不进就不写
+pillars:
+  - 引入判断
+  - 成本与代价
+  - 规则变动
+  - 工程边界
+  - 横评实测
+
+# L2 推导链：五段必填（护栏按此顺序校验）
+chain_fields: [signal, problem, scene, evidence, judgement]
+chain_labels:
+  signal: '上游信号：发生了什么变化 / 争议 / 异常数据（不是「某人写了个工具」）'
+  problem: '经营或工程问题：谁因此要改变什么决策'
+  scene: '场景化：行业 × 角色/岗位 × 工作场景 × 当前阻碍 × 期望结果'
+  evidence: '证据：S/A/B 级来源 + 一手现场或降级说明'
+  judgement: '差异化判断：比现有内容多走一步、且我们有资格表达'
+
+# L3 问题树四问（推荐字段，缺了记 warning 不阻断）
+question_tree_fields: [change, contradiction, gap, qualification]
+
+# L4 信源门
+source_tiers:
+  S: '官方公告/文档、监管与协会数据、论文、报告原文、财报、原始访谈 —— 可支撑核心事实与数字'
+  A: '头部垂直媒体原创研究/采访，作者与证据链清晰 —— 趋势判断与独立交叉验证'
+  B: '具名专家原创、专业社区深度内容 —— 补充解释，不能单独支撑核心判断'
+  C: '门户自媒体、聚合转载、软文导购、无日期页 —— 只作线索，不进台账'
+core_facts_require_tier: S          # 核心事实必须回溯 S 级，否则标 ⚠️待核实、不进标题
+reject_c_as_fact_source: true
+
+# L5 评估 7 维（强/中/弱；技能原文要求「不要用虚假的精确总分掩盖证据缺口」）
+evaluation_fields: [relevance, novelty, qualification, evidence, differentiation, actionability, fit]
+evaluation_values: [强, 中, 弱]
+
+# L6 事实分级与标注
+fact_grades:
+  F: 事实（有 S 级来源可回溯）
+  I: 推断（由 F 推导，须明确标注，不得写成已确认）
+  H: 假设（未验证的设想，禁止进标题）
+  D: 待决策
+title_allowed_grades: [F, I]
+title_forbidden_grades: [H, D]
+marks:
+  confirmed: '✅ 已确认（来源：xxx）'
+  pending: '⚠️ 待核实（原因：xxx，建议：去哪查）'
+  not_found: '❓ 没查到可靠来源，不实锤'
+  guess: '💭 推测（无依据，仅供判断）'
+
+# 一手现场降级规则（技能硬要求与本项目现实冲突的解法）
+degradation:
+  first_hand_available: false
+  substitute: '可复算的公开数据 + 本地实测 + 明确标注的推演'
+  rule: '推演一律标 I 或 H，绝不冒充 F；仓库 README/LICENSE/Release 与平台官方文档属 S 级'
+  require_degrade_note: true
+  no_fictional_first_person: true
+  note: '禁止虚构亲历、实测数据、客户案例；数字只作算账示例并附公式与口径'
+
+# 低档话题模式：命中即拒（对应锋哥「太低级」的判定）
+banned_topic_patterns:
+  - '功能说明'
+  - '安装教程'
+  - '上手步骤'
+  - '怎么用'
+  - '是什么'
+  - 'Star 数'
+  - 'star 数'
+  - '收藏数'
+  - '项目介绍'
+  - 'README 转述'
+  - '值得收藏'
+banned_note: '说明书体 / 虚荣数字 / 零判断，一律不得作为 signal 或 judgement'
+
+# 话题卡模板：自动化出稿时写 drafts/<YYYY-MM-DD>/topic_card.json
+topic_card_template:
+  date: 'YYYY-MM-DD'
+  track: tech
+  pillar: '<必须属于 pillars>'
+  chain:
+    signal: ''
+    problem: ''
+    scene:
+      industry: ''
+      role: ''
+      situation: ''
+      blocker: ''
+      expect: ''
+    evidence: ''
+    judgement: ''
+  question_tree:
+    change: ''
+    contradiction: ''
+    gap: ''
+    qualification: ''
+  sources:
+    - url: ''
+      publisher: ''
+      date: ''
+      tier: 'S'
+      role: fact_source
+  core_facts: []
+  fact_grades:
+    - claim: ''
+      grade: F
+      in_body: true
+  title_claims:
+    - text: ''
+      grade: F
+      in_body: true
+  evaluation:
+    relevance: 强
+    novelty: 中
+    qualification: 中
+    evidence: 中
+    differentiation: 强
+    actionability: 中
+    fit: 强
+  first_hand: false
+  degrade_note: ''
+  no_fictional_first_person: true
+  title: ''
