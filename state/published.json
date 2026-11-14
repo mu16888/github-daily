@@ -63,10 +63,20 @@
           "status": "published"
         }
       }
+    },
+    "seedds/nxnative": {
+      "first_date": "2026-11-14",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2104969428496655232",
+          "at": "2026-11-14T08:10:40+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-13",
+    "last_dispatched": "2026-11-14",
     "last_mode": "live",
     "history": [
       "2026-11-09",
@@ -80,7 +90,8 @@
       "2026-11-10",
       "2026-11-10",
       "2026-11-12",
-      "2026-11-13"
+      "2026-11-13",
+      "2026-11-14"
     ]
   }
 }

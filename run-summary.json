@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-13",
+  "date": "2026-11-14",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,39 +11,39 @@
   },
   "drafts": [
     {
-      "repo": "heydamir/unslop",
-      "title": "unslop 解决什么问题？功能、安装与上手",
+      "repo": "seedds/nxnative",
+      "title": "nxnative 解决什么问题？功能、安装与上手",
       "platform_titles": {
-        "zhihu": "先别急着装 unslop：MCP server 接口",
-        "juejin": "unslop 上手：15277 Star，附安装步骤",
-        "csdn": "unslop 上手教程，先看这一点：15277 Star"
+        "zhihu": "15367 Star，nxnative 说明里写了这些",
+        "juejin": "nxnative 使用笔记：15367 Star，附现成安装步骤",
+        "csdn": "nxnative 功能说明与安装：15367 Star"
       },
       "keywords": [],
       "score": 16,
       "files": [
-        "drafts/2026-11-13/heydamir__unslop.md",
-        "drafts/2026-11-13/heydamir__unslop.html",
-        "drafts/2026-11-13/rewrite/heydamir__unslop.zhihu.md",
-        "drafts/2026-11-13/rewrite/heydamir__unslop.juejin.md",
-        "drafts/2026-11-13/rewrite/heydamir__unslop.csdn.md",
-        "drafts/2026-11-13/rewrite/heydamir__unslop.wechat.md",
-        "drafts/2026-11-13/rewrite/heydamir__unslop.toutiao.md"
+        "drafts/2026-11-14/seedds__nxnative.md",
+        "drafts/2026-11-14/seedds__nxnative.html",
+        "drafts/2026-11-14/rewrite/seedds__nxnative.zhihu.md",
+        "drafts/2026-11-14/rewrite/seedds__nxnative.juejin.md",
+        "drafts/2026-11-14/rewrite/seedds__nxnative.csdn.md",
+        "drafts/2026-11-14/rewrite/seedds__nxnative.wechat.md",
+        "drafts/2026-11-14/rewrite/seedds__nxnative.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "judgement_first",
-        "hook_type": "判断 / 冲突",
-        "opening_index": 0,
+        "id": "before_after",
+        "hook_type": "前后对比",
+        "opening_index": 1,
         "sections": [
           "judgement",
           "what",
+          "takeaway",
           "boundary",
           "first_step",
-          "takeaway",
           "labels"
         ],
-        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
-        "date": "2026-11-13"
+        "source_query": "topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-14"
       },
       "rewrite_guard_ok": true
     }
@@ -52,8 +52,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2104591517855790364",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2104591517855790364 | articles/drafts http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2104969428496655232",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2104969428496655232 | articles/drafts http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],
