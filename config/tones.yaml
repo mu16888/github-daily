@@ -35,8 +35,8 @@ platforms:
   zhihu:
     title_max: 50
     title_patterns:
-      - '{name} 值不值得花时间装：先看它解决什么'
-      - '{name}：{hook}，先弄清它解决什么'
+      - '{name} 适用边界：什么时候能用，什么时候别碰'
+      - '什么时候不用 {name}：先把前提列清楚'
     lead_template: '{name} 在 GitHub 上给自己的简介是「{desc_lead}」。{hook}。值不值得花时间装，得看它解决的事跟你对不对得上。'
     section_order: [problem, what, features, signals, install, usage, archive, caveat, faq]
     section_titles:
@@ -59,8 +59,8 @@ platforms:
   juejin:
     title_max: 80
     title_patterns:
-      - '{name} 怎么用：{hook}，附完整安装命令'
-      - '{name} 使用与安装：{hook}，命令可直接复制'
+      - '{name} 什么时候不该用：前提、依赖与回滚'
+      - '引入 {name} 之前，先算维护成本'
     lead_template: '{name} 主要用 {language} 写，{hook}。说明里有 Quick Start 和现成的安装命令。'
     section_order: [what, features, install, usage, signals, caveat]
     section_titles:
@@ -81,8 +81,8 @@ platforms:
   csdn:
     title_max: 50
     title_patterns:
-      - '{name} 安装教程：{language} 工具的功能与上手'
-      - '{name} 怎么用：安装步骤、功能说明与常见问题'
+      - '{name} 适用边界：什么场景能用，什么场景别碰'
+      - '{name} 什么时候不该用：前提先过一遍'
     lead_template: '{name} 是给 {topics_zh} 这类活儿用的 {language} 工具，{hook}。'
     section_order: [what, install, usage, features, archive, faq, caveat]
     section_titles:
@@ -106,8 +106,8 @@ platforms:
     title_max_bytes: 64
     brief_max_bytes: 120
     title_patterns:
-      - '{hook}，这个开源项目把办法写清楚了'
-      - '{name}：{hook}'
+      - '先定边界，再谈 {name}'
+      - '{name}：前提比功能重要'
     lead_template: '{name} 是个用 {language} 写的开源工具，{hook}。'
     section_order: [problem, what, features, install, caveat]
     section_titles:
@@ -131,8 +131,8 @@ platforms:
     # ≤30 字为第三方说法，待核实；这里按字符数保守控制
     title_max: 30
     title_patterns:
-      - '{hook}，GitHub 上有人做了个工具'
-      - '{name} 解决什么：{hook}'
+      - '能跑起来，不等于能退回来'
+      - '先问什么时候别用'
     lead_template: '{name}，{hook}。{language} 写的开源工具，GitHub 上 {stars} 人收藏。'
     section_order: [what, problem, features, install, caveat]
     section_titles:
