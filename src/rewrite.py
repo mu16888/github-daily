@@ -15,13 +15,36 @@ from __future__ import annotations
 
 import hashlib
 import re
+from pathlib import Path
 from typing import Any
+
+import yaml
 
 from .discover import Repo
 from .hooks import extract_selling_points, selling_point
 from .seo import load_seo
 from .tones import BANNED, PLATFORMS, _fit, _fit_bytes
 from .topics import choose, guard, labels_for, load_topics
+
+# 标题框架 v2（2026-11-14 锋哥定）：标题必须给判断，不许说明书体。
+# 模板外置到 config/title_framework.yaml，改行为不用改代码；
+# 文件缺失 / 版本不对 / 解析失败时静默退回内置 SHAPES，保证流水线不中断。
+_TF_FILE = Path(__file__).resolve().parent.parent / "config" / "title_framework.yaml"
+_TF_CACHE: dict = {}
+
+
+def _title_framework() -> dict:
+    """读取外置标题框架；失败返回空 dict，由调用方退回旧模板。"""
+    if _TF_CACHE:
+        return _TF_CACHE
+    try:
+        d = yaml.safe_load(_TF_FILE.read_text(encoding="utf-8")) or {}
+        if int((d.get("meta") or {}).get("version", 0)) >= 2 and d.get("platforms"):
+            _TF_CACHE.update(d)
+    except Exception:
+        pass
+    return _TF_CACHE
+
 
 # 平台形态差异：只改「取舍 / 详略 / 口吻 / 篇幅」，不改事实。
 SHAPES: dict[str, dict[str, Any]] = {
@@ -309,23 +332,44 @@ def _title(platform: str, shape: dict, f: dict, date: str,
     if pts:
         vals["selling_point"] = pts[point_seed % len(pts)]
 
-    pats = shape["titles"]
-    core = [p for p in pats if "{selling_point}" in p]
-    fallback = [p for p in pats if "{selling_point}" not in p]
-    ordered = ([core[(seed + i) % len(core)] for i in range(len(core))]
-               if core else []) + fallback
-    # 兜底一定放得下，避免长项目名把标题硬截成半句
-    ordered.append("{name}")
+    # ── 标题框架 v2 ──────────────────────────────────────────────
+    # 外置模板优先；护栏先过滤模板本身（说明书体/虚荣数字/空判断），
+    # 渲染后再过滤一次（防止 {selling_point} 里带出被禁词）。
+    tf = _title_framework()
+    pcfg = (tf.get("platforms") or {}).get(platform) or {}
+    banned = [b for b in (tf.get("banned") or []) if b]
+    fallbacks = list(tf.get("fallbacks") or [])
+    pats: list[str] = list(pcfg.get("titles") or []) or list(shape["titles"])
+    external = bool(pcfg.get("titles"))
+    if banned:
+        pats = [p for p in pats if not any(b in p for b in banned)]
+
+    if external:
+        # 判断型模板一律按 (日期, 平台) 散列轮换，不再按「是否含钩子」分两档：
+        # 旧分档会把不带 selling_point 的判断句永远压在后面，等于没换框架。
+        ordered = [pats[(seed + i) % len(pats)] for i in range(len(pats))] if pats else []
+    else:
+        core = [p for p in pats if "{selling_point}" in p]
+        fallback = [p for p in pats if "{selling_point}" not in p]
+        ordered = ([core[(seed + i) % len(core)] for i in range(len(core))]
+                   if core else []) + fallback
+    # 兜底用短判断句，不再用裸项目名（那是说明书体的最后一道口子）
+    ordered += [p for p in fallbacks if p not in ordered] or ["{name}"]
     bytes_mode = bool(shape.get("title_bytes"))
     limit = int(shape.get("title_max_bytes") or shape.get("title_max", 50))
     for pat in ordered:
-        cand = pat.format(**vals)
+        try:
+            cand = pat.format(**vals)
+        except (KeyError, IndexError, ValueError):
+            continue
+        if banned and any(b in cand for b in banned):
+            continue
         if cand in (avoid or set()):   # 同一天别的平台已经用了这句，换下一条
             continue
         size = len(cand.encode("utf-8")) if bytes_mode else len(cand)
         if size <= limit:
             return cand, False
-    cand = ordered[0].format(**vals)
+    cand = ordered[0].format(**vals) if ordered else vals.get("name", "")
     return (_fit_bytes(cand, limit) if bytes_mode else _fit(cand, limit)), True
 
 
