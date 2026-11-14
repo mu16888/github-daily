@@ -41,6 +41,20 @@ HEAVY_DEP_RE = re.compile(
     re.I,
 )
 WIP_RE = re.compile(r"\b(WIP|work in progress|experimental|not production[- ]ready|alpha stage)\b", re.I)
+# 话题框架 v3（2026-11-14）：4 个「判断力」文本代理指标。
+# 只匹配 README 里真实出现的词，不推测项目价值；用于排序，不用于硬筛。
+LIMITATION_RE = re.compile(
+    r"\b(limitations?|caveats?|known issues?|not suitable|constraints?)\b|"
+    r"(已知问题|不适用场景|使用限制|适用边界)", re.I)
+COMPARISON_RE = re.compile(
+    r"\b(benchmarks?|compared (?:to|with)|vs\.?|alternatives?|trade-?offs?)\b|"
+    r"(对比|横评|性能实测|替代方案|同类方案)", re.I)
+CHANGE_RE = re.compile(
+    r"\b(breaking changes?|migration guide|deprecated|changelog|release notes|"
+    r"upgrade guide|no longer supported)\b|(迁移指南|版本变动|弃用|不兼容|升级说明)", re.I)
+WHY_RE = re.compile(
+    r"\b(why|design decisions?|rationale|motivation|architecture decisions?)\b|"
+    r"(设计取舍|为什么做|原理|设计动机)", re.I)
 QUICKSTART_RE = re.compile(
     r"(?im)^#{1,4}\s*(?:[0-9.]*\s*)?"
     r"(quick\s*start|getting started|installation|install|usage|how to use|"
@@ -315,8 +329,11 @@ def score(repo: Repo, w: dict) -> tuple[int, list[str]]:
 
     def add(key: str, ok: bool, note: str) -> None:
         nonlocal total
-        if ok:
-            total += int(w.get(key, 0))
+        weight = int(w.get(key, 0))
+        # 权重置 0 的信号不再写进 signals：否则日志里会出现「免编译」
+        # 这类看似加了分、实际 0 分的说明，误导排查。
+        if ok and weight:
+            total += weight
             signals.append(note)
 
     add("readme_present", bool(readme), "写了说明文档")
@@ -327,6 +344,11 @@ def score(repo: Repo, w: dict) -> tuple[int, list[str]]:
     add("no_compile_required", bool(readme) and not COMPILE_RE.search(readme), "不用自己把源码做成软件")
     add("low_dependency", bool(readme) and not HEAVY_DEP_RE.search(low), "不用另外配数据库、账号或者付费服务")
     add("sweet_spot_stars", 500 <= repo.stars <= 20000, f"{repo.stars} 颗星，不算冷门")
+    # 判断力信号：README 明确写了边界 / 对比 / 变动 / 取舍，说明值得展开判断
+    add("has_limitations", bool(LIMITATION_RE.search(readme)), "写明了限制或不适用场景")
+    add("has_comparison", bool(COMPARISON_RE.search(readme)), "有对比或基准测试")
+    add("has_change_signal", bool(CHANGE_RE.search(readme)), "有版本变动或迁移说明")
+    add("has_why_section", bool(WHY_RE.search(readme)), "讲了设计取舍或为什么做")
 
     if readme and len(readme) < 400:
         total += int(w.get("penalty_tiny_readme", 0))
@@ -380,13 +402,18 @@ def pick(session: requests.Session, cfg: dict, already: set[str], limit: int = 1
     """返回本次要出稿的项目；已发布过的项目直接跳过，保证跨天不重复。"""
     candidates = search_candidates(session, cfg["queries"], cfg)
     pool: list[Repo] = []
+    min_score = int(cfg["daily"]["min_score"])
+    # 话题框架 v3：旧逻辑硬写 `and repo.install_blocks`，等于「没安装命令就不许入选」，
+    # 正是每天只推出陌生小工具说明书的机制性根因。改由配置开关控制，
+    # 缺省 True 保持旧行为（向后兼容），本机/云端 settings.yaml 已设 false。
+    require_install = bool(cfg["daily"].get("require_install_blocks", True))
     for repo in candidates:
         if repo.full_name in already:
             continue
         if repo.full_name.startswith("."):
             continue
         enrich(session, repo, cfg["score_weights"])
-        if repo.score >= int(cfg["daily"]["min_score"]) and repo.install_blocks:
+        if repo.score >= min_score and (not require_install or repo.install_blocks):
             pool.append(repo)
     pool.sort(key=lambda r: (-r.score, -r.stars))
     return pool[:limit]
