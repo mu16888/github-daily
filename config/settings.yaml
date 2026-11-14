@@ -4,7 +4,14 @@
 daily:
   picks_per_day: 1          # 每天出几篇（每个平台各发 1 篇，避免刷屏触发风控）
   candidate_pool: 24        # 搜索候选上限（控制 API 请求数）
-  min_score: 9              # 小白友好分门槛
+  # 2026-11-14 话题框架 v3：门槛从「好装」改为「能形成判断」。
+  # 权重下调后总分上限下降，9 分会把池子筛空，故降到 6（基础分恰好过线），
+  # 由新增的「判断力信号」决定排序，而不是靠硬门槛卡掉项目。
+  min_score: 6
+  # 旧逻辑在 src/discover.py::pick() 里硬写 `and repo.install_blocks`，
+  # 等于「没安装命令就不许入选」——这是每天只推出陌生小工具说明书的机制性根因。
+  # false = 取消该硬门槛；true = 恢复旧行为（一键回滚）。
+  require_install_blocks: false
   since_days: 45            # 只看近 N 天创建/活跃的项目
   stars_min: 150
   stars_max: 20000
@@ -19,16 +26,32 @@ queries:
   - 'topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{since}'
 
 # 打分权重（只依据 README / API 中真实出现的信号，不做推测）
+# 2026-11-14 话题框架 v3 改造依据：
+#   锋哥判定「这种话题太低级」。根因是权重全给「好装」——
+#   Quick Start +3 / 一条命令装 +4 / 免编译 +2 / 低依赖 +1，
+#   必然筛出「某人写了个小工具」，有工程深度的项目反被扣分。
+#   另外 config/topics.yaml 第 81 行自己写着「50 条掘金热榜里没有一条是
+#   项目安装教程 / 功能介绍」，流水线却天天产这个。
+# 改造：削「好装」权重，新增 4 个**可核查的文本代理指标**（不是推测，
+# 都是 README 里真实出现的词），让有判断空间的项目排到前面。
+# 注意：这些只是「值不值得写」的排序信号，真正的话题判断由
+# config/topic_framework_v3.yaml 的推导链负责。
 score_weights:
   readme_present: 2
   readme_substantial: 2       # README >= 800 字符
-  quickstart_section: 3       # 含 Quick Start / 快速开始 / Getting Started / 安装
-  one_command_install: 4      # pip/npm/brew/docker/uvx/npx/cargo/go install
+  quickstart_section: 1       # 3→1：不再奖励「有安装章节」
+  one_command_install: 1      # 4→1：不再奖励「一条命令装完」
   has_license: 1
-  has_releases: 2
-  no_compile_required: 2      # 安装步骤里没有 make/go build/cargo build
-  low_dependency: 1           # 没有「需要数据库 / API key / 付费服务」等字样
-  sweet_spot_stars: 1         # 500..20000 stars
+  has_releases: 2             # 注：score() 当前未读此键，属既有死配置，未改代码
+  no_compile_required: 0      # 2→0：免编译不等于有料
+  low_dependency: 0           # 1→0：依赖少不等于值得写
+  sweet_spot_stars: 1
+  # ↓ 判断力信号：README 里明确写了限制 / 对比 / 变更 / 设计取舍，
+  #   说明这个话题有边界、有代价、有可讨论的决策，而不只是功能列表。
+  has_limitations: 3          # Limitations / Caveats / 已知问题 / 不适用场景
+  has_comparison: 3           # benchmark / vs / 对比 / 替代方案 / 性能
+  has_change_signal: 3        # breaking change / 迁移 / 弃用 / 版本变动 / changelog
+  has_why_section: 2           # Why / 设计取舍 / 原理 / 为什么做
   penalty_tiny_readme: -3     # README < 400 字符
   penalty_wip: -4             # WIP / experimental / not production ready
   penalty_paid_or_key: -2     # 明确要求 API key 或付费套餐
