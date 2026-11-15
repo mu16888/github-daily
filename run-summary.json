@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-14",
+  "date": "2026-11-15",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,39 +11,43 @@
   },
   "drafts": [
     {
-      "repo": "seedds/nxnative",
-      "title": "nxnative 解决什么问题？功能、安装与上手",
+      "repo": "xerj-org/xerj",
+      "title": "xerj 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "15367 Star，nxnative 说明里写了这些",
-        "juejin": "nxnative 使用笔记：15367 Star，附现成安装步骤",
-        "csdn": "nxnative 功能说明与安装：15367 Star"
+        "zhihu": "「不用 match 的实现」之外，xerj 真正要回答的是边界",
+        "juejin": "「html / txt / md 格式支持」不是免费午餐：xerj 的依赖项先看",
+        "csdn": "xerj 与同类做法的差别，不在「离线可用」在边界"
       },
-      "keywords": [],
-      "score": 16,
+      "keywords": [
+        "命令行工具",
+        "MCP",
+        "Rust"
+      ],
+      "score": 19,
       "files": [
-        "drafts/2026-11-14/seedds__nxnative.md",
-        "drafts/2026-11-14/seedds__nxnative.html",
-        "drafts/2026-11-14/rewrite/seedds__nxnative.zhihu.md",
-        "drafts/2026-11-14/rewrite/seedds__nxnative.juejin.md",
-        "drafts/2026-11-14/rewrite/seedds__nxnative.csdn.md",
-        "drafts/2026-11-14/rewrite/seedds__nxnative.wechat.md",
-        "drafts/2026-11-14/rewrite/seedds__nxnative.toutiao.md"
+        "drafts/2026-11-15/xerj-org__xerj.md",
+        "drafts/2026-11-15/xerj-org__xerj.html",
+        "drafts/2026-11-15/rewrite/xerj-org__xerj.zhihu.md",
+        "drafts/2026-11-15/rewrite/xerj-org__xerj.juejin.md",
+        "drafts/2026-11-15/rewrite/xerj-org__xerj.csdn.md",
+        "drafts/2026-11-15/rewrite/xerj-org__xerj.wechat.md",
+        "drafts/2026-11-15/rewrite/xerj-org__xerj.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "before_after",
-        "hook_type": "前后对比",
-        "opening_index": 1,
+        "id": "takeaway_list",
+        "hook_type": "清单 / 实操",
+        "opening_index": 2,
         "sections": [
           "judgement",
           "what",
           "takeaway",
-          "boundary",
           "first_step",
+          "boundary",
           "labels"
         ],
-        "source_query": "topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-14"
+        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-15"
       },
       "rewrite_guard_ok": true
     }
@@ -52,8 +56,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2104969428496655232",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2104969428496655232 | articles/drafts http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2105317238404391679",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2105317238404391679 | articles/drafts http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],

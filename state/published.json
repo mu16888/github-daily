@@ -73,10 +73,20 @@
           "status": "published"
         }
       }
+    },
+    "xerj-org/xerj": {
+      "first_date": "2026-11-15",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2105317238404391679",
+          "at": "2026-11-15T07:12:47+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-14",
+    "last_dispatched": "2026-11-15",
     "last_mode": "live",
     "history": [
       "2026-11-09",
@@ -91,7 +101,8 @@
       "2026-11-10",
       "2026-11-12",
       "2026-11-13",
-      "2026-11-14"
+      "2026-11-14",
+      "2026-11-15"
     ]
   }
 }
