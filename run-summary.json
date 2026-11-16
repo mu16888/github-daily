@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-15",
+  "date": "2026-11-16",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,43 +11,41 @@
   },
   "drafts": [
     {
-      "repo": "xerj-org/xerj",
-      "title": "xerj 适用边界：什么时候能用，什么时候别碰",
+      "repo": "Orange-OpenSource/hurl",
+      "title": "hurl 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "「不用 match 的实现」之外，xerj 真正要回答的是边界",
-        "juejin": "「html / txt / md 格式支持」不是免费午餐：xerj 的依赖项先看",
-        "csdn": "xerj 与同类做法的差别，不在「离线可用」在边界"
+        "zhihu": "「html / txt / json 格式支持」之外，hurl 真正要回答的是边界",
+        "juejin": "hurl 更新到 2026-11-16，旧的接入结论要重算",
+        "csdn": "hurl 适用边界：什么场景能用，什么场景别碰"
       },
       "keywords": [
-        "命令行工具",
-        "MCP",
-        "Rust"
+        "命令行工具"
       ],
-      "score": 19,
+      "score": 12,
       "files": [
-        "drafts/2026-11-15/xerj-org__xerj.md",
-        "drafts/2026-11-15/xerj-org__xerj.html",
-        "drafts/2026-11-15/rewrite/xerj-org__xerj.zhihu.md",
-        "drafts/2026-11-15/rewrite/xerj-org__xerj.juejin.md",
-        "drafts/2026-11-15/rewrite/xerj-org__xerj.csdn.md",
-        "drafts/2026-11-15/rewrite/xerj-org__xerj.wechat.md",
-        "drafts/2026-11-15/rewrite/xerj-org__xerj.toutiao.md"
+        "drafts/2026-11-16/Orange-OpenSource__hurl.md",
+        "drafts/2026-11-16/Orange-OpenSource__hurl.html",
+        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.zhihu.md",
+        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.juejin.md",
+        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.csdn.md",
+        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.wechat.md",
+        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "takeaway_list",
-        "hook_type": "清单 / 实操",
-        "opening_index": 2,
+        "id": "judgement_first",
+        "hook_type": "判断 / 冲突",
+        "opening_index": 0,
         "sections": [
           "judgement",
           "what",
-          "takeaway",
-          "first_step",
           "boundary",
+          "first_step",
+          "takeaway",
           "labels"
         ],
-        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-15"
+        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
+        "date": "2026-11-16"
       },
       "rewrite_guard_ok": true
     }
@@ -56,8 +54,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2105317238404391679",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2105317238404391679 | articles/drafts http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2105701864973021665",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2105701864973021665 | articles/drafts http=200 | articles/2105701864973021665/topics http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],

@@ -83,13 +83,22 @@
           "status": "published"
         }
       }
+    },
+    "Orange-OpenSource/hurl": {
+      "first_date": "2026-11-16",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2105701864973021665",
+          "at": "2026-11-16T08:41:10+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-15",
+    "last_dispatched": "2026-11-16",
     "last_mode": "live",
     "history": [
-      "2026-11-09",
       "2026-11-09",
       "2026-11-09",
       "2026-11-09",
@@ -102,7 +111,8 @@
       "2026-11-12",
       "2026-11-13",
       "2026-11-14",
-      "2026-11-15"
+      "2026-11-15",
+      "2026-11-16"
     ]
   }
 }

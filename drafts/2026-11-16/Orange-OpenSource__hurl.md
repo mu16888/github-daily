@@ -1,0 +1,89 @@
+# hurl 适用边界：什么时候能用，什么时候别碰
+
+hurl 在 GitHub 上给自己的简介是「Hurl, run and test HTTP requests with plain text」，19324 Star 的开源项目。仓库标签里有 命令行工具。要不要装，先看它解决什么问题跟你对不对得上。
+
+## 它解决什么问题
+
+作者在仓库说明里写了做这个东西的缘由。
+
+<ul class="showcase-container">
+    <li><b>Text Format:</b> for both devops and developers</li>
+    <li><b>Fast CLI:</b> a command line for local dev and continuous integration</li>
+    <li><b>Single Binary:</b> easy to install, with no runtime required</li>
+
+## 这是个什么项目
+
+> Hurl, run and test HTTP requests with plain text.
+
+主要用 **Rust** 写，GitHub 上攒了 **19324** 颗星（就是收藏数），用的是 Apache-2.0 协议。
+协议管的是你能不能拿去商用、改了要不要公开，用之前扫一眼。仓库地址：[Orange-OpenSource/hurl](https://github.com/Orange-OpenSource/hurl)。
+
+## 能做什么
+
+说明里没单列功能清单，能确认的只有仓库简介和这几项。
+
+- 作者原话，Hurl, run and test HTTP requests with plain text.
+- 主要用 Rust 写
+- 标签有 api-testing、cli、curl、http、http-client、integration-testing、testing、testing-tools
+
+
+## 新手装起来麻烦吗
+
+第一次上手最容易卡在两件事。要不要自己把源码做成能跑的软件，说明里有没有现成命令。这个仓库查到的是这些。
+
+- 写了说明文档
+- 说明写得够长，不是三两句就完事
+- 写了 Quick Start（快速上手）和怎么装
+- 标了 Apache-2.0 协议，用起来有规矩
+- 19324 颗星，不算冷门
+- 有对比或基准测试
+- 讲了设计取舍或为什么做
+
+## 安装教程
+
+仓库说明里没给能直接复制的安装命令，怎么装得去仓库页面看。
+
+
+
+装不上先别急着重试。看看说明是不是改过命令，再看电脑上装没装它要的环境、版本对不对。
+
+## 项目档案
+
+| 项目 | 内容 |
+| --- | --- |
+| 仓库 | [Orange-OpenSource/hurl](https://github.com/Orange-OpenSource/hurl) |
+| 收藏数 | 19324 |
+| 主要用什么写 | Rust |
+| 开源协议 | Apache-2.0 |
+| 标签 | api-testing、cli、curl、http、http-client、integration-testing、testing、testing-tools |
+| 创建时间 | 2020-08-25 |
+| 最近更新 | 2026-11-16 |
+| 数据记于 | 2026-11-16T08:40:33+00:00 |
+
+## 动手前留意
+
+- 项目还在改，命令隔段时间可能就不一样了。
+- Apache-2.0 协议。拿去商用或者改了再发，先看条款让不让。
+
+## 常见问题
+
+**hurl 解决什么问题？**
+
+hurl 在仓库简介里写的是「Hurl, run and test HTTP requests with plain text」。说明里写了缘由的，开头那段就是作者原话；没写的，就看这句简介和标签，别自己脑补。
+
+**hurl 怎么安装？**
+
+把说明里 Install 那段的命令复制下来跑一遍就行。装不上先看说明是不是改过，再看电脑上装没装它要的环境。
+
+**hurl 免费吗？**
+
+仓库标的是 Apache-2.0 协议，代码可以免费用。拿去做生意或者改了再发，先看条款让不让。
+
+**hurl 适合新手吗？**
+
+看两件事就够了。说明里有没有现成安装命令，要不要自己把源码做成软件。星星多不多跟这个没关系。
+
+
+---
+
+hurl 还在改，装之前记得翻一眼仓库说明。
