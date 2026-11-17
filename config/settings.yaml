@@ -3,7 +3,7 @@
 
 daily:
   picks_per_day: 1          # 每天出几篇（每个平台各发 1 篇，避免刷屏触发风控）
-  candidate_pool: 24        # 搜索候选上限（控制 API 请求数）
+  candidate_pool: 40        # 2026-11-17：类目从 3 条增到 7 条，同步扩容避免每类只拉 3 个
   # 2026-11-14 话题框架 v3：门槛从「好装」改为「能形成判断」。
   # 权重下调后总分上限下降，9 分会把池子筛空，故降到 6（基础分恰好过线），
   # 由新增的「判断力信号」决定排序，而不是靠硬门槛卡掉项目。
@@ -24,6 +24,12 @@ queries:
   - 'created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false'
   - 'pushed:>{recent} stars:{stars_min}..{stars_max} archived:false fork:false language:Python'
   - 'topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{since}'
+  # 2026-11-17 锋哥定调：云端知乎＝GitHub 热门应用（尤其 AI 方向），稍微编辑直接搬来积累关注。
+  # search_candidates 用 sort=stars&order=desc，下列查询本身即按热度拉候选，无需改打分代码。
+  - 'topic:llm stars:1000..{stars_max} archived:false fork:false pushed:>{recent}'
+  - 'topic:ai stars:1000..{stars_max} archived:false fork:false pushed:>{recent}'
+  - 'topic:agent stars:1000..{stars_max} archived:false fork:false pushed:>{recent}'
+  - 'topic:artificial-intelligence stars:1000..{stars_max} archived:false fork:false pushed:>{recent}'
 
 # 打分权重（只依据 README / API 中真实出现的信号，不做推测）
 # 2026-11-14 话题框架 v3 改造依据：
