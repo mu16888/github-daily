@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-16",
+  "date": "2026-11-17",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,41 +11,41 @@
   },
   "drafts": [
     {
-      "repo": "Orange-OpenSource/hurl",
-      "title": "hurl 适用边界：什么时候能用，什么时候别碰",
+      "repo": "confident-ai/deepeval",
+      "title": "deepeval 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "「html / txt / json 格式支持」之外，hurl 真正要回答的是边界",
-        "juejin": "hurl 更新到 2026-11-16，旧的接入结论要重算",
-        "csdn": "hurl 适用边界：什么场景能用，什么场景别碰"
+        "zhihu": "什么时候不用 deepeval：先看「MCP server 接口」的前提",
+        "juejin": "把 deepeval 换掉的成本，比装它的成本高多少",
+        "csdn": "deepeval 的 Python 实现，决定了哪些场景用不上"
       },
       "keywords": [
-        "命令行工具"
+        "Python"
       ],
-      "score": 12,
+      "score": 11,
       "files": [
-        "drafts/2026-11-16/Orange-OpenSource__hurl.md",
-        "drafts/2026-11-16/Orange-OpenSource__hurl.html",
-        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.zhihu.md",
-        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.juejin.md",
-        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.csdn.md",
-        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.wechat.md",
-        "drafts/2026-11-16/rewrite/Orange-OpenSource__hurl.toutiao.md"
+        "drafts/2026-11-17/confident-ai__deepeval.md",
+        "drafts/2026-11-17/confident-ai__deepeval.html",
+        "drafts/2026-11-17/rewrite/confident-ai__deepeval.zhihu.md",
+        "drafts/2026-11-17/rewrite/confident-ai__deepeval.juejin.md",
+        "drafts/2026-11-17/rewrite/confident-ai__deepeval.csdn.md",
+        "drafts/2026-11-17/rewrite/confident-ai__deepeval.wechat.md",
+        "drafts/2026-11-17/rewrite/confident-ai__deepeval.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "judgement_first",
-        "hook_type": "判断 / 冲突",
-        "opening_index": 0,
+        "id": "before_after",
+        "hook_type": "前后对比",
+        "opening_index": 1,
         "sections": [
           "judgement",
           "what",
+          "takeaway",
           "boundary",
           "first_step",
-          "takeaway",
           "labels"
         ],
-        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
-        "date": "2026-11-16"
+        "source_query": "topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-17"
       },
       "rewrite_guard_ok": true
     }
@@ -54,8 +54,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2105701864973021665",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2105701864973021665 | articles/drafts http=200 | articles/2105701864973021665/topics http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2105955177928857146",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2105955177928857146 | articles/drafts http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],
