@@ -65,19 +65,24 @@ fallbacks:
 
 platforms:
 
+  # 2026-11-17 锋哥定调（知乎云端专用，其它平台不受影响）：
+  # 这条线是「搬 GitHub 热门应用（尤其 AI 方向）积累关注」，不是深度判断稿。
+  # 规则：20~24 字、中文为主、项目名最多出现一次；
+  #       不用 {language}/{license}/{selling_point}（这些常带英文），
+  #       且逐条避开全局 banned，避免被护栏剔除后掉进判断型 fallbacks。
   zhihu:
-    task: '抛一个站得住的工程判断，项目名退到次要位置'
+    task: '一句话说清这是什么，短标题、中文为主、项目名只出现一次'
     titles:
-      - '什么时候不用 {name}：先看「{selling_point}」的前提'
-      - '「{selling_point}」有前提，{name} 的适用边界先看清'
-      - '{name} 最近更新停在 {pushed}，「{selling_point}」还成立吗'
-      - '该不该把 {name} 放进主力链路：「{selling_point}」只是起点'
-      - '「{selling_point}」之外，{name} 真正要回答的是边界'
-      - '{name} 用 {language} 写这件事，决定不了它该不该上'
-      - '别把「{selling_point}」当成结论：{name} 的代价另算'
-      - '{name} 的 {license} 协议，比「{selling_point}」更该先看'
-      - '一个工程判断，比多装一个 {name} 更值钱'
-      - '「{selling_point}」能落地的前提，{name} 说明里写清了吗'
+      - '{name} 是什么，能拿来做什么'
+      - '开源项目 {name}，主要解决哪类麻烦'
+      - '{name} 做了什么，谁会用到它'
+      - '热门开源项目 {name}，做什么用'
+      - '{name}：一个能直接用的开源工具'
+      - '{name} 的功能清单，整理好了'
+      - '开源工具 {name}，适合哪些场景'
+      - '这个开源项目叫 {name}，先看用途'
+      - '{stars} 次收藏的开源项目，做了什么'
+      - '被收藏 {stars} 次的开源项目，能做什么'
 
   juejin:
     task: '给可复用的决策条件，重点写「什么时候别用」'
