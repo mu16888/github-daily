@@ -103,13 +103,22 @@
           "status": "published"
         }
       }
+    },
+    "semantica-agi/semantica": {
+      "first_date": "2026-11-18",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2106436035714475774",
+          "at": "2026-11-18T09:18:30+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-17",
+    "last_dispatched": "2026-11-18",
     "last_mode": "live",
     "history": [
-      "2026-11-09",
       "2026-11-09",
       "2026-11-09",
       "2026-11-09",
@@ -122,7 +131,8 @@
       "2026-11-14",
       "2026-11-15",
       "2026-11-16",
-      "2026-11-17"
+      "2026-11-17",
+      "2026-11-18"
     ]
   }
 }

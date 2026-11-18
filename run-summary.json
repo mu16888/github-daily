@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-17",
+  "date": "2026-11-18",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,41 +11,43 @@
   },
   "drafts": [
     {
-      "repo": "confident-ai/deepeval",
-      "title": "deepeval 适用边界：什么时候能用，什么时候别碰",
+      "repo": "semantica-agi/semantica",
+      "title": "semantica 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "什么时候不用 deepeval：先看「MCP server 接口」的前提",
-        "juejin": "把 deepeval 换掉的成本，比装它的成本高多少",
-        "csdn": "deepeval 的 Python 实现，决定了哪些场景用不上"
+        "zhihu": "这个开源项目叫 semantica，先看用途",
+        "juejin": "semantica 更新到 2026-11-17，旧的接入结论要重算",
+        "csdn": "semantica 的「md / json / txt 格式支持」：前提、代价与回滚"
       },
       "keywords": [
+        "AI",
+        "大模型",
         "Python"
       ],
-      "score": 11,
+      "score": 19,
       "files": [
-        "drafts/2026-11-17/confident-ai__deepeval.md",
-        "drafts/2026-11-17/confident-ai__deepeval.html",
-        "drafts/2026-11-17/rewrite/confident-ai__deepeval.zhihu.md",
-        "drafts/2026-11-17/rewrite/confident-ai__deepeval.juejin.md",
-        "drafts/2026-11-17/rewrite/confident-ai__deepeval.csdn.md",
-        "drafts/2026-11-17/rewrite/confident-ai__deepeval.wechat.md",
-        "drafts/2026-11-17/rewrite/confident-ai__deepeval.toutiao.md"
+        "drafts/2026-11-18/semantica-agi__semantica.md",
+        "drafts/2026-11-18/semantica-agi__semantica.html",
+        "drafts/2026-11-18/rewrite/semantica-agi__semantica.zhihu.md",
+        "drafts/2026-11-18/rewrite/semantica-agi__semantica.juejin.md",
+        "drafts/2026-11-18/rewrite/semantica-agi__semantica.csdn.md",
+        "drafts/2026-11-18/rewrite/semantica-agi__semantica.wechat.md",
+        "drafts/2026-11-18/rewrite/semantica-agi__semantica.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "before_after",
-        "hook_type": "前后对比",
-        "opening_index": 1,
+        "id": "takeaway_list",
+        "hook_type": "清单 / 实操",
+        "opening_index": 2,
         "sections": [
           "judgement",
           "what",
           "takeaway",
-          "boundary",
           "first_step",
+          "boundary",
           "labels"
         ],
-        "source_query": "topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-17"
+        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-18"
       },
       "rewrite_guard_ok": true
     }
@@ -54,8 +56,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2105955177928857146",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2105955177928857146 | articles/drafts http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2106436035714475774",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2106436035714475774 | articles/drafts http=200 | articles/2106436035714475774/topics http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],
