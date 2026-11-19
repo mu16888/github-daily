@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-18",
+  "date": "2026-11-19",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,43 +11,43 @@
   },
   "drafts": [
     {
-      "repo": "semantica-agi/semantica",
-      "title": "semantica 适用边界：什么时候能用，什么时候别碰",
+      "repo": "leon-ai/leon",
+      "title": "leon 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "这个开源项目叫 semantica，先看用途",
-        "juejin": "semantica 更新到 2026-11-17，旧的接入结论要重算",
-        "csdn": "semantica 的「md / json / txt 格式支持」：前提、代价与回滚"
+        "zhihu": "被收藏 17692 次的开源项目，能做什么",
+        "juejin": "把 leon 换掉的成本，比装它的成本高多少",
+        "csdn": "leon 适用边界：什么场景能用，什么场景别碰"
       },
       "keywords": [
         "AI",
-        "大模型",
+        "自动化",
         "Python"
       ],
-      "score": 19,
+      "score": 15,
       "files": [
-        "drafts/2026-11-18/semantica-agi__semantica.md",
-        "drafts/2026-11-18/semantica-agi__semantica.html",
-        "drafts/2026-11-18/rewrite/semantica-agi__semantica.zhihu.md",
-        "drafts/2026-11-18/rewrite/semantica-agi__semantica.juejin.md",
-        "drafts/2026-11-18/rewrite/semantica-agi__semantica.csdn.md",
-        "drafts/2026-11-18/rewrite/semantica-agi__semantica.wechat.md",
-        "drafts/2026-11-18/rewrite/semantica-agi__semantica.toutiao.md"
+        "drafts/2026-11-19/leon-ai__leon.md",
+        "drafts/2026-11-19/leon-ai__leon.html",
+        "drafts/2026-11-19/rewrite/leon-ai__leon.zhihu.md",
+        "drafts/2026-11-19/rewrite/leon-ai__leon.juejin.md",
+        "drafts/2026-11-19/rewrite/leon-ai__leon.csdn.md",
+        "drafts/2026-11-19/rewrite/leon-ai__leon.wechat.md",
+        "drafts/2026-11-19/rewrite/leon-ai__leon.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "takeaway_list",
-        "hook_type": "清单 / 实操",
-        "opening_index": 2,
+        "id": "judgement_first",
+        "hook_type": "判断 / 冲突",
+        "opening_index": 0,
         "sections": [
           "judgement",
           "what",
-          "takeaway",
-          "first_step",
           "boundary",
+          "first_step",
+          "takeaway",
           "labels"
         ],
-        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-18"
+        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
+        "date": "2026-11-19"
       },
       "rewrite_guard_ok": true
     }
@@ -56,8 +56,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2106436035714475774",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2106436035714475774 | articles/drafts http=200 | articles/2106436035714475774/topics http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2106802441635239578",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2106802441635239578 | articles/drafts http=200 | articles/2106802441635239578/topics http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],
