@@ -123,13 +123,22 @@
           "status": "published"
         }
       }
+    },
+    "elizaOS/eliza": {
+      "first_date": "2026-11-20",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2107160442544067449",
+          "at": "2026-11-20T09:17:01+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-19",
+    "last_dispatched": "2026-11-20",
     "last_mode": "live",
     "history": [
-      "2026-11-09",
       "2026-11-09",
       "2026-11-10",
       "2026-11-10",
@@ -142,7 +151,8 @@
       "2026-11-16",
       "2026-11-17",
       "2026-11-18",
-      "2026-11-19"
+      "2026-11-19",
+      "2026-11-20"
     ]
   }
 }

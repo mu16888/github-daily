@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-19",
+  "date": "2026-11-20",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,43 +11,41 @@
   },
   "drafts": [
     {
-      "repo": "leon-ai/leon",
-      "title": "leon 适用边界：什么时候能用，什么时候别碰",
+      "repo": "elizaOS/eliza",
+      "title": "eliza 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "被收藏 17692 次的开源项目，能做什么",
-        "juejin": "把 leon 换掉的成本，比装它的成本高多少",
-        "csdn": "leon 适用边界：什么场景能用，什么场景别碰"
+        "zhihu": "eliza：一个能直接用的开源工具",
+        "juejin": "eliza 的 MIT 与依赖，决定它能不能进生产",
+        "csdn": "eliza 的「md / json / txt 格式支持」：前提、代价与回滚"
       },
       "keywords": [
-        "AI",
-        "自动化",
-        "Python"
+        "AI"
       ],
-      "score": 15,
+      "score": 13,
       "files": [
-        "drafts/2026-11-19/leon-ai__leon.md",
-        "drafts/2026-11-19/leon-ai__leon.html",
-        "drafts/2026-11-19/rewrite/leon-ai__leon.zhihu.md",
-        "drafts/2026-11-19/rewrite/leon-ai__leon.juejin.md",
-        "drafts/2026-11-19/rewrite/leon-ai__leon.csdn.md",
-        "drafts/2026-11-19/rewrite/leon-ai__leon.wechat.md",
-        "drafts/2026-11-19/rewrite/leon-ai__leon.toutiao.md"
+        "drafts/2026-11-20/elizaOS__eliza.md",
+        "drafts/2026-11-20/elizaOS__eliza.html",
+        "drafts/2026-11-20/rewrite/elizaOS__eliza.zhihu.md",
+        "drafts/2026-11-20/rewrite/elizaOS__eliza.juejin.md",
+        "drafts/2026-11-20/rewrite/elizaOS__eliza.csdn.md",
+        "drafts/2026-11-20/rewrite/elizaOS__eliza.wechat.md",
+        "drafts/2026-11-20/rewrite/elizaOS__eliza.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "judgement_first",
-        "hook_type": "判断 / 冲突",
-        "opening_index": 0,
+        "id": "before_after",
+        "hook_type": "前后对比",
+        "opening_index": 1,
         "sections": [
           "judgement",
           "what",
+          "takeaway",
           "boundary",
           "first_step",
-          "takeaway",
           "labels"
         ],
-        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
-        "date": "2026-11-19"
+        "source_query": "topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-20"
       },
       "rewrite_guard_ok": true
     }
@@ -56,8 +54,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2106802441635239578",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2106802441635239578 | articles/drafts http=200 | articles/2106802441635239578/topics http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2107160442544067449",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2107160442544067449 | articles/drafts http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],
