@@ -133,13 +133,22 @@
           "status": "published"
         }
       }
+    },
+    "wanshuiyin/Auto-claude-code-research-in-sleep": {
+      "first_date": "2026-11-21",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2107517165536556146",
+          "at": "2026-11-21T08:54:32+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-20",
+    "last_dispatched": "2026-11-21",
     "last_mode": "live",
     "history": [
-      "2026-11-09",
       "2026-11-10",
       "2026-11-10",
       "2026-11-10",
@@ -152,7 +161,8 @@
       "2026-11-17",
       "2026-11-18",
       "2026-11-19",
-      "2026-11-20"
+      "2026-11-20",
+      "2026-11-21"
     ]
   }
 }
