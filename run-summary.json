@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-21",
+  "date": "2026-11-22",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,42 +11,41 @@
   },
   "drafts": [
     {
-      "repo": "wanshuiyin/Auto-claude-code-research-in-sleep",
-      "title": "Auto-claude-code-research-in-sleep 适用边界：什么时候能用，什么时候别碰",
+      "repo": "libracoder/kiri",
+      "title": "kiri 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "被收藏 19543 次的开源项目，能做什么",
-        "juejin": "Auto-claude-code-research-in-sleep 的「html / pdf / md 格式支持」：能跑起来不等于能退回来",
-        "csdn": "工具越装越多，判断没跟着涨"
+        "zhihu": "kiri：一个能直接用的开源工具",
+        "juejin": "kiri 更新到 2026-11-22，旧的接入结论要重算",
+        "csdn": "kiri 的「三端一套代码」：前提、代价与回滚"
       },
       "keywords": [
-        "大模型",
-        "MCP"
+        "Docker"
       ],
-      "score": 13,
+      "score": 19,
       "files": [
-        "drafts/2026-11-21/wanshuiyin__Auto-claude-code-research-in-sleep.md",
-        "drafts/2026-11-21/wanshuiyin__Auto-claude-code-research-in-sleep.html",
-        "drafts/2026-11-21/rewrite/wanshuiyin__Auto-claude-code-research-in-sleep.zhihu.md",
-        "drafts/2026-11-21/rewrite/wanshuiyin__Auto-claude-code-research-in-sleep.juejin.md",
-        "drafts/2026-11-21/rewrite/wanshuiyin__Auto-claude-code-research-in-sleep.csdn.md",
-        "drafts/2026-11-21/rewrite/wanshuiyin__Auto-claude-code-research-in-sleep.wechat.md",
-        "drafts/2026-11-21/rewrite/wanshuiyin__Auto-claude-code-research-in-sleep.toutiao.md"
+        "drafts/2026-11-22/libracoder__kiri.md",
+        "drafts/2026-11-22/libracoder__kiri.html",
+        "drafts/2026-11-22/rewrite/libracoder__kiri.zhihu.md",
+        "drafts/2026-11-22/rewrite/libracoder__kiri.juejin.md",
+        "drafts/2026-11-22/rewrite/libracoder__kiri.csdn.md",
+        "drafts/2026-11-22/rewrite/libracoder__kiri.wechat.md",
+        "drafts/2026-11-22/rewrite/libracoder__kiri.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "takeaway_list",
-        "hook_type": "清单 / 实操",
-        "opening_index": 2,
+        "id": "judgement_first",
+        "hook_type": "判断 / 冲突",
+        "opening_index": 0,
         "sections": [
           "judgement",
           "what",
-          "takeaway",
-          "first_step",
           "boundary",
+          "first_step",
+          "takeaway",
           "labels"
         ],
-        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-21"
+        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
+        "date": "2026-11-22"
       },
       "rewrite_guard_ok": true
     }
@@ -55,8 +54,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2107517165536556146",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2107517165536556146 | articles/drafts http=200 | articles/2107517165536556146/topics http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2107879906860340007",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2107879906860340007 | articles/drafts http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],

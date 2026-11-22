@@ -1,0 +1,42 @@
+<h1>kiri 适用边界：什么时候能用，什么时候别碰</h1>
+<p>kiri 在 GitHub 上给自己的简介是「A small, fast container runtime for macOS, Windows and Linux」，一行命令就能装好。仓库标签里有 Docker。要不要装，先看它解决什么问题跟你对不对得上。</p>
+<h2>它解决什么问题</h2>
+<p>作者在仓库说明里写了做这个东西的缘由。</p>
+<p>Kiri runs containers in one small Linux VM (or straight on the kernel on<br>Linux) and speaks the Docker Engine API, so your tools just work. The name<br>comes from the Igbo word *ntakịrị*, "small".</p>
+<ul><li><strong>Fast</strong>: a container starts and exits in about 2.5 ms through the Docker API.</li></ul>
+<h2>这是个什么项目</h2>
+<blockquote><p>A small, fast container runtime for macOS, Windows and Linux with free Ngrok alternative</p></blockquote>
+<p>主要用 <strong>Rust</strong> 写，GitHub 上攒了 <strong>12136</strong> 颗星（就是收藏数），用的是 Apache-2.0 协议。<br>协议管的是你能不能拿去商用、改了要不要公开，用之前扫一眼。仓库地址：<a href="https://github.com/libracoder/kiri">libracoder/kiri</a>。</p>
+<h2>能做什么</h2>
+<p>作者在说明里列了这些。</p>
+<table><thead><tr><th>Area</th><th>What you get</th></tr></thead><tbody><tr><td><strong>Containers</strong></td><td>The full lifecycle: <code>run</code>, <code>exec</code>, <code>logs</code>, <code>attach</code>, <code>stop</code>, <code>kill</code>, <code>restart</code>, <code>pause</code>, <code>update</code>, <code>stats</code>, <code>top</code>, <code>diff</code>, <code>export</code>, <code>commit</code> and <code>cp</code> both ways. Records survive a daemon restart.</td></tr><tr><td><strong>Limits and security</strong></td><td><code>--memory</code>, <code>--cpus</code>, <code>--pids-limit</code>, <code>--shm-size</code>. Docker's default capabilities and a default seccomp filter, <code>--cap-add</code>/<code>--cap-drop</code>, <code>--privileged</code>, <code>--read-only</code>, <code>no-new-privileges</code>.</td></tr><tr><td><strong>Networking</strong></td><td>A default bridge, user networks with DNS by name and alias, <code>-p</code>/<code>-P</code> for TCP and UDP, `--network host\</td><td>none\</td><td>container:&lt;name&gt;<code>, IPAM (</code>--subnet<code>, </code>--gateway<code>, </code>--ip<code>), IPv6, </code>host.docker.internal`.</td></tr><tr><td><strong>Local domains</strong></td><td><code>http://&lt;name&gt;.kiri.local</code> for every container and <code>&lt;service&gt;.&lt;project&gt;.kiri.local</code> for Compose, with HTTPS from Kiri's own certificate authority.</td></tr><tr><td><strong>Storage</strong></td><td>Named and anonymous volumes, bind mounts of host paths, <code>--tmpfs</code>, <code>--mount</code>.</td></tr><tr><td><strong>Images</strong></td><td><code>pull</code>, <code>push</code>, <code>tag</code>, <code>save</code>, <code>load</code>, <code>history</code>, <code>search</code>, with <code>docker login</code> credentials. amd64 images run through Rosetta on Apple silicon.</td></tr></tbody></table>
+<h2>新手装起来麻烦吗</h2>
+<p>第一次上手最容易卡在两件事。要不要自己把源码做成能跑的软件，说明里有没有现成命令。这个仓库查到的是这些。</p>
+<ul><li>写了说明文档</li><li>说明写得够长，不是三两句就完事</li><li>写了 Quick Start（快速上手）和怎么装</li><li>有能直接复制的安装命令</li><li>标了 Apache-2.0 协议，用起来有规矩</li><li>12136 颗星，不算冷门</li><li>写明了限制或不适用场景</li><li>有对比或基准测试</li><li>有版本变动或迁移说明</li><li>讲了设计取舍或为什么做</li></ul>
+<h2>安装教程</h2>
+<p>下面这些命令是仓库说明里现成的，复制下来就能跑。动手前顺手去仓库页面扫一眼，作者可能改过版本。</p>
+<pre><code>brew install --cask libracoder/kiri/kiri</code></pre>
+<p>装不上先别急着重试。看看说明是不是改过命令，再看电脑上装没装它要的环境、版本对不对。</p>
+<h2>装完怎么上手</h2>
+<p>仓库说明里 Quick Start（快速上手）那部分写了这些。</p>
+<pre><code class="language-sh">docker --context kiri run --rm alpine echo hello
+docker --context kiri compose up -d
+kiri k8s start                      # single-node Kubernetes as the `kiri` kubectl context
+kiri machine create dev --distro ubuntu &amp;&amp; kiri machine shell dev
+kiri import                         # bring images, volumes and containers over from OrbStack or Docker Desktop</code></pre>
+<p>Docker's commands also work as <code>kiri</code> commands (<code>kiri run</code>, <code>kiri ps</code>,<br><code>kiri compose up</code>, and so on), and always target Kiri.</p>
+<h2>项目档案</h2>
+<table><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody><tr><td>仓库</td><td><a href="https://github.com/libracoder/kiri">libracoder/kiri</a></td></tr><tr><td>收藏数</td><td>12136</td></tr><tr><td>主要用什么写</td><td>Rust</td></tr><tr><td>开源协议</td><td>Apache-2.0</td></tr><tr><td>标签</td><td>containers、docker、kubernetes、linux、macos、oci、windows</td></tr><tr><td>创建时间</td><td>2026-11-02</td></tr><tr><td>最近更新</td><td>2026-11-22</td></tr><tr><td>数据记于</td><td>2026-11-22T08:55:20+00:00</td></tr></tbody></table>
+<h2>动手前留意</h2>
+<ul><li>项目还在改，命令隔段时间可能就不一样了。</li><li>Apache-2.0 协议。拿去商用或者改了再发，先看条款让不让。</li></ul>
+<h2>常见问题</h2>
+<p><strong>kiri 解决什么问题？</strong></p>
+<p>kiri 在仓库简介里写的是「A small, fast container runtime for macOS, Windows and Linux」。说明里写了缘由的，开头那段就是作者原话；没写的，就看这句简介和标签，别自己脑补。</p>
+<p><strong>kiri 怎么安装？</strong></p>
+<p>把说明里 Install 那段的命令复制下来跑一遍就行。装不上先看说明是不是改过，再看电脑上装没装它要的环境。</p>
+<p><strong>kiri 免费吗？</strong></p>
+<p>仓库标的是 Apache-2.0 协议，代码可以免费用。拿去做生意或者改了再发，先看条款让不让。</p>
+<p><strong>kiri 适合新手吗？</strong></p>
+<p>看两件事就够了。说明里有没有现成安装命令，要不要自己把源码做成软件。星星多不多跟这个没关系。</p>
+<p>---</p>
+<p>kiri 还在改，装之前记得翻一眼仓库说明。</p>

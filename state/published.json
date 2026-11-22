@@ -143,13 +143,22 @@
           "status": "published"
         }
       }
+    },
+    "libracoder/kiri": {
+      "first_date": "2026-11-22",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2107879906860340007",
+          "at": "2026-11-22T08:55:55+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-21",
+    "last_dispatched": "2026-11-22",
     "last_mode": "live",
     "history": [
-      "2026-11-10",
       "2026-11-10",
       "2026-11-10",
       "2026-11-10",
@@ -162,7 +171,8 @@
       "2026-11-18",
       "2026-11-19",
       "2026-11-20",
-      "2026-11-21"
+      "2026-11-21",
+      "2026-11-22"
     ]
   }
 }
