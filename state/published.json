@@ -153,13 +153,22 @@
           "status": "published"
         }
       }
+    },
+    "carla-simulator/carla": {
+      "first_date": "2026-11-23",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2108256877259903969",
+          "at": "2026-11-23T09:53:52+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-22",
+    "last_dispatched": "2026-11-23",
     "last_mode": "live",
     "history": [
-      "2026-11-10",
       "2026-11-10",
       "2026-11-10",
       "2026-11-12",
@@ -172,7 +181,8 @@
       "2026-11-19",
       "2026-11-20",
       "2026-11-21",
-      "2026-11-22"
+      "2026-11-22",
+      "2026-11-23"
     ]
   }
 }

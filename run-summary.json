@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-22",
+  "date": "2026-11-23",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,41 +11,41 @@
   },
   "drafts": [
     {
-      "repo": "libracoder/kiri",
-      "title": "kiri 适用边界：什么时候能用，什么时候别碰",
+      "repo": "carla-simulator/carla",
+      "title": "carla 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "kiri：一个能直接用的开源工具",
-        "juejin": "kiri 更新到 2026-11-22，旧的接入结论要重算",
-        "csdn": "kiri 的「三端一套代码」：前提、代价与回滚"
+        "zhihu": "这个开源项目叫 carla，先看用途",
+        "juejin": "把 carla 换掉的成本，比装它的成本高多少",
+        "csdn": "carla 的 C++ 实现，决定了哪些场景用不上"
       },
       "keywords": [
-        "Docker"
+        "AI"
       ],
-      "score": 19,
+      "score": 13,
       "files": [
-        "drafts/2026-11-22/libracoder__kiri.md",
-        "drafts/2026-11-22/libracoder__kiri.html",
-        "drafts/2026-11-22/rewrite/libracoder__kiri.zhihu.md",
-        "drafts/2026-11-22/rewrite/libracoder__kiri.juejin.md",
-        "drafts/2026-11-22/rewrite/libracoder__kiri.csdn.md",
-        "drafts/2026-11-22/rewrite/libracoder__kiri.wechat.md",
-        "drafts/2026-11-22/rewrite/libracoder__kiri.toutiao.md"
+        "drafts/2026-11-23/carla-simulator__carla.md",
+        "drafts/2026-11-23/carla-simulator__carla.html",
+        "drafts/2026-11-23/rewrite/carla-simulator__carla.zhihu.md",
+        "drafts/2026-11-23/rewrite/carla-simulator__carla.juejin.md",
+        "drafts/2026-11-23/rewrite/carla-simulator__carla.csdn.md",
+        "drafts/2026-11-23/rewrite/carla-simulator__carla.wechat.md",
+        "drafts/2026-11-23/rewrite/carla-simulator__carla.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "judgement_first",
-        "hook_type": "判断 / 冲突",
-        "opening_index": 0,
+        "id": "before_after",
+        "hook_type": "前后对比",
+        "opening_index": 1,
         "sections": [
           "judgement",
           "what",
+          "takeaway",
           "boundary",
           "first_step",
-          "takeaway",
           "labels"
         ],
-        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
-        "date": "2026-11-22"
+        "source_query": "topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-23"
       },
       "rewrite_guard_ok": true
     }
@@ -54,8 +54,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2107879906860340007",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2107879906860340007 | articles/drafts http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2108256877259903969",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2108256877259903969 | articles/drafts http=200 | articles/2108256877259903969/topics http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],
