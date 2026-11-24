@@ -163,13 +163,22 @@
           "status": "published"
         }
       }
+    },
+    "nginx-proxy/nginx-proxy": {
+      "first_date": "2026-11-24",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2108646603225568681",
+          "at": "2026-11-24T11:42:30+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-23",
+    "last_dispatched": "2026-11-24",
     "last_mode": "live",
     "history": [
-      "2026-11-10",
       "2026-11-10",
       "2026-11-12",
       "2026-11-13",
@@ -182,7 +191,8 @@
       "2026-11-20",
       "2026-11-21",
       "2026-11-22",
-      "2026-11-23"
+      "2026-11-23",
+      "2026-11-24"
     ]
   }
 }

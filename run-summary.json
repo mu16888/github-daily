@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-23",
+  "date": "2026-11-24",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,41 +11,41 @@
   },
   "drafts": [
     {
-      "repo": "carla-simulator/carla",
-      "title": "carla 适用边界：什么时候能用，什么时候别碰",
+      "repo": "nginx-proxy/nginx-proxy",
+      "title": "nginx-proxy 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "这个开源项目叫 carla，先看用途",
-        "juejin": "把 carla 换掉的成本，比装它的成本高多少",
-        "csdn": "carla 的 C++ 实现，决定了哪些场景用不上"
+        "zhihu": "开源项目 nginx-proxy，主要解决哪类麻烦",
+        "juejin": "nginx-proxy 更新到 2026-11-24，旧的接入结论要重算",
+        "csdn": "nginx-proxy 的 Python 实现，决定了哪些场景用不上"
       },
       "keywords": [
-        "AI"
+        "Docker"
       ],
       "score": 13,
       "files": [
-        "drafts/2026-11-23/carla-simulator__carla.md",
-        "drafts/2026-11-23/carla-simulator__carla.html",
-        "drafts/2026-11-23/rewrite/carla-simulator__carla.zhihu.md",
-        "drafts/2026-11-23/rewrite/carla-simulator__carla.juejin.md",
-        "drafts/2026-11-23/rewrite/carla-simulator__carla.csdn.md",
-        "drafts/2026-11-23/rewrite/carla-simulator__carla.wechat.md",
-        "drafts/2026-11-23/rewrite/carla-simulator__carla.toutiao.md"
+        "drafts/2026-11-24/nginx-proxy__nginx-proxy.md",
+        "drafts/2026-11-24/nginx-proxy__nginx-proxy.html",
+        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.zhihu.md",
+        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.juejin.md",
+        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.csdn.md",
+        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.wechat.md",
+        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "before_after",
-        "hook_type": "前后对比",
-        "opening_index": 1,
+        "id": "takeaway_list",
+        "hook_type": "清单 / 实操",
+        "opening_index": 2,
         "sections": [
           "judgement",
           "what",
           "takeaway",
-          "boundary",
           "first_step",
+          "boundary",
           "labels"
         ],
-        "source_query": "topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-23"
+        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-24"
       },
       "rewrite_guard_ok": true
     }
@@ -54,8 +54,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2108256877259903969",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2108256877259903969 | articles/drafts http=200 | articles/2108256877259903969/topics http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2108646603225568681",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2108646603225568681 | articles/drafts http=200 | articles/2108646603225568681/topics http=200 | articles/2108646603225568681/topics http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],
