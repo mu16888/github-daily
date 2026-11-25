@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-24",
+  "date": "2026-11-25",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,41 +11,44 @@
   },
   "drafts": [
     {
-      "repo": "nginx-proxy/nginx-proxy",
-      "title": "nginx-proxy 适用边界：什么时候能用，什么时候别碰",
+      "repo": "BaaRai/ARTEX",
+      "title": "ARTEX 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "开源项目 nginx-proxy，主要解决哪类麻烦",
-        "juejin": "nginx-proxy 更新到 2026-11-24，旧的接入结论要重算",
-        "csdn": "nginx-proxy 的 Python 实现，决定了哪些场景用不上"
+        "zhihu": "这个开源项目叫 ARTEX，先看用途",
+        "juejin": "把 ARTEX 换掉的成本，比装它的成本高多少",
+        "csdn": "ARTEX 的 Go 实现，决定了哪些场景用不上"
       },
       "keywords": [
-        "Docker"
+        "AI",
+        "Docker",
+        "大模型",
+        "MCP"
       ],
       "score": 13,
       "files": [
-        "drafts/2026-11-24/nginx-proxy__nginx-proxy.md",
-        "drafts/2026-11-24/nginx-proxy__nginx-proxy.html",
-        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.zhihu.md",
-        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.juejin.md",
-        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.csdn.md",
-        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.wechat.md",
-        "drafts/2026-11-24/rewrite/nginx-proxy__nginx-proxy.toutiao.md"
+        "drafts/2026-11-25/BaaRai__ARTEX.md",
+        "drafts/2026-11-25/BaaRai__ARTEX.html",
+        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.zhihu.md",
+        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.juejin.md",
+        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.csdn.md",
+        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.wechat.md",
+        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "takeaway_list",
-        "hook_type": "清单 / 实操",
-        "opening_index": 2,
+        "id": "judgement_first",
+        "hook_type": "判断 / 冲突",
+        "opening_index": 0,
         "sections": [
           "judgement",
           "what",
-          "takeaway",
-          "first_step",
           "boundary",
+          "first_step",
+          "takeaway",
           "labels"
         ],
-        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-24"
+        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
+        "date": "2026-11-25"
       },
       "rewrite_guard_ok": true
     }
@@ -54,8 +57,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2108646603225568681",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2108646603225568681 | articles/drafts http=200 | articles/2108646603225568681/topics http=200 | articles/2108646603225568681/topics http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2108992022736548534",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2108992022736548534 | articles/drafts http=200 | articles/2108992022736548534/topics http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],
