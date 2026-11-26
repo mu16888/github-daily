@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-25",
+  "date": "2026-11-26",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,44 +11,39 @@
   },
   "drafts": [
     {
-      "repo": "BaaRai/ARTEX",
-      "title": "ARTEX 适用边界：什么时候能用，什么时候别碰",
+      "repo": "camel-ai/camel",
+      "title": "camel 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "这个开源项目叫 ARTEX，先看用途",
-        "juejin": "把 ARTEX 换掉的成本，比装它的成本高多少",
-        "csdn": "ARTEX 的 Go 实现，决定了哪些场景用不上"
+        "zhihu": "这个开源项目叫 camel，先看用途",
+        "juejin": "camel 的 Apache-2.0 与依赖，决定它能不能进生产",
+        "csdn": "camel 的 Python 实现，决定了哪些场景用不上"
       },
-      "keywords": [
-        "AI",
-        "Docker",
-        "大模型",
-        "MCP"
-      ],
+      "keywords": [],
       "score": 13,
       "files": [
-        "drafts/2026-11-25/BaaRai__ARTEX.md",
-        "drafts/2026-11-25/BaaRai__ARTEX.html",
-        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.zhihu.md",
-        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.juejin.md",
-        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.csdn.md",
-        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.wechat.md",
-        "drafts/2026-11-25/rewrite/BaaRai__ARTEX.toutiao.md"
+        "drafts/2026-11-26/camel-ai__camel.md",
+        "drafts/2026-11-26/camel-ai__camel.html",
+        "drafts/2026-11-26/rewrite/camel-ai__camel.zhihu.md",
+        "drafts/2026-11-26/rewrite/camel-ai__camel.juejin.md",
+        "drafts/2026-11-26/rewrite/camel-ai__camel.csdn.md",
+        "drafts/2026-11-26/rewrite/camel-ai__camel.wechat.md",
+        "drafts/2026-11-26/rewrite/camel-ai__camel.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "judgement_first",
-        "hook_type": "判断 / 冲突",
-        "opening_index": 0,
+        "id": "before_after",
+        "hook_type": "前后对比",
+        "opening_index": 1,
         "sections": [
           "judgement",
           "what",
+          "takeaway",
           "boundary",
           "first_step",
-          "takeaway",
           "labels"
         ],
-        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
-        "date": "2026-11-25"
+        "source_query": "topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-26"
       },
       "rewrite_guard_ok": true
     }
@@ -57,8 +52,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2108992022736548534",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2108992022736548534 | articles/drafts http=200 | articles/2108992022736548534/topics http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2109347356407771426",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2109347356407771426 | articles/drafts http=200 | articles/2109347356407771426/topics http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],

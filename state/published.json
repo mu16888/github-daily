@@ -183,13 +183,22 @@
           "status": "published"
         }
       }
+    },
+    "camel-ai/camel": {
+      "first_date": "2026-11-26",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2109347356407771426",
+          "at": "2026-11-26T10:07:03+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-25",
+    "last_dispatched": "2026-11-26",
     "last_mode": "live",
     "history": [
-      "2026-11-12",
       "2026-11-13",
       "2026-11-14",
       "2026-11-15",
@@ -202,7 +211,8 @@
       "2026-11-22",
       "2026-11-23",
       "2026-11-24",
-      "2026-11-25"
+      "2026-11-25",
+      "2026-11-26"
     ]
   }
 }
