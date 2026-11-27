@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-26",
+  "date": "2026-11-27",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,39 +11,39 @@
   },
   "drafts": [
     {
-      "repo": "camel-ai/camel",
-      "title": "camel 适用边界：什么时候能用，什么时候别碰",
+      "repo": "JuneYaooo/rea-video",
+      "title": "rea-video 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "这个开源项目叫 camel，先看用途",
-        "juejin": "camel 的 Apache-2.0 与依赖，决定它能不能进生产",
-        "csdn": "camel 的 Python 实现，决定了哪些场景用不上"
+        "zhihu": "开源项目 rea-video，主要解决哪类麻烦",
+        "juejin": "「不用 video 的实现」落地要过的几关，rea-video 说明里能对上几条",
+        "csdn": "rea-video 能不能进生产：先看「不用 video 的实现」的边界"
       },
       "keywords": [],
-      "score": 13,
+      "score": 12,
       "files": [
-        "drafts/2026-11-26/camel-ai__camel.md",
-        "drafts/2026-11-26/camel-ai__camel.html",
-        "drafts/2026-11-26/rewrite/camel-ai__camel.zhihu.md",
-        "drafts/2026-11-26/rewrite/camel-ai__camel.juejin.md",
-        "drafts/2026-11-26/rewrite/camel-ai__camel.csdn.md",
-        "drafts/2026-11-26/rewrite/camel-ai__camel.wechat.md",
-        "drafts/2026-11-26/rewrite/camel-ai__camel.toutiao.md"
+        "drafts/2026-11-27/JuneYaooo__rea-video.md",
+        "drafts/2026-11-27/JuneYaooo__rea-video.html",
+        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.zhihu.md",
+        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.juejin.md",
+        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.csdn.md",
+        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.wechat.md",
+        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "before_after",
-        "hook_type": "前后对比",
-        "opening_index": 1,
+        "id": "takeaway_list",
+        "hook_type": "清单 / 实操",
+        "opening_index": 2,
         "sections": [
           "judgement",
           "what",
           "takeaway",
-          "boundary",
           "first_step",
+          "boundary",
           "labels"
         ],
-        "source_query": "topic:developer-tools stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-26"
+        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
+        "date": "2026-11-27"
       },
       "rewrite_guard_ok": true
     }
@@ -52,8 +52,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2109347356407771426",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2109347356407771426 | articles/drafts http=200 | articles/2109347356407771426/topics http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2109711142465623204",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2109711142465623204 | articles/drafts http=200 | articles/2109711142465623204/topics http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],

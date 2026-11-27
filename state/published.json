@@ -193,13 +193,22 @@
           "status": "published"
         }
       }
+    },
+    "JuneYaooo/rea-video": {
+      "first_date": "2026-11-27",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2109711142465623204",
+          "at": "2026-11-27T10:12:36+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-26",
+    "last_dispatched": "2026-11-27",
     "last_mode": "live",
     "history": [
-      "2026-11-13",
       "2026-11-14",
       "2026-11-15",
       "2026-11-16",
@@ -212,7 +221,8 @@
       "2026-11-23",
       "2026-11-24",
       "2026-11-25",
-      "2026-11-26"
+      "2026-11-26",
+      "2026-11-27"
     ]
   }
 }
