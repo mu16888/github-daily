@@ -203,13 +203,22 @@
           "status": "published"
         }
       }
+    },
+    "rocketride-org/rocketride-server": {
+      "first_date": "2026-11-28",
+      "platforms": {
+        "zhihu": {
+          "url": "https://zhuanlan.zhihu.com/p/2110063047406531870",
+          "at": "2026-11-28T09:30:56+00:00",
+          "status": "published"
+        }
+      }
     }
   },
   "schedule": {
-    "last_dispatched": "2026-11-27",
+    "last_dispatched": "2026-11-28",
     "last_mode": "live",
     "history": [
-      "2026-11-14",
       "2026-11-15",
       "2026-11-16",
       "2026-11-17",
@@ -222,7 +231,8 @@
       "2026-11-24",
       "2026-11-25",
       "2026-11-26",
-      "2026-11-27"
+      "2026-11-27",
+      "2026-11-28"
     ]
   }
 }

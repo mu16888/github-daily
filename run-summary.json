@@ -1,5 +1,5 @@
 {
-  "date": "2026-11-27",
+  "date": "2026-11-28",
   "picked": 1,
   "dry_run": false,
   "publish_enabled": true,
@@ -11,39 +11,43 @@
   },
   "drafts": [
     {
-      "repo": "JuneYaooo/rea-video",
-      "title": "rea-video 适用边界：什么时候能用，什么时候别碰",
+      "repo": "rocketride-org/rocketride-server",
+      "title": "rocketride-server 适用边界：什么时候能用，什么时候别碰",
       "platform_titles": {
-        "zhihu": "开源项目 rea-video，主要解决哪类麻烦",
-        "juejin": "「不用 video 的实现」落地要过的几关，rea-video 说明里能对上几条",
-        "csdn": "rea-video 能不能进生产：先看「不用 video 的实现」的边界"
+        "zhihu": "rocketride-server 的功能清单，整理好了",
+        "juejin": "rocketride-server 的 MIT 与依赖，决定它能不能进生产",
+        "csdn": "rocketride-server 的 Python 实现，决定了哪些场景用不上"
       },
-      "keywords": [],
-      "score": 12,
+      "keywords": [
+        "大模型",
+        "MCP",
+        "开源"
+      ],
+      "score": 11,
       "files": [
-        "drafts/2026-11-27/JuneYaooo__rea-video.md",
-        "drafts/2026-11-27/JuneYaooo__rea-video.html",
-        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.zhihu.md",
-        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.juejin.md",
-        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.csdn.md",
-        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.wechat.md",
-        "drafts/2026-11-27/rewrite/JuneYaooo__rea-video.toutiao.md"
+        "drafts/2026-11-28/rocketride-org__rocketride-server.md",
+        "drafts/2026-11-28/rocketride-org__rocketride-server.html",
+        "drafts/2026-11-28/rewrite/rocketride-org__rocketride-server.zhihu.md",
+        "drafts/2026-11-28/rewrite/rocketride-org__rocketride-server.juejin.md",
+        "drafts/2026-11-28/rewrite/rocketride-org__rocketride-server.csdn.md",
+        "drafts/2026-11-28/rewrite/rocketride-org__rocketride-server.wechat.md",
+        "drafts/2026-11-28/rewrite/rocketride-org__rocketride-server.toutiao.md"
       ],
       "content_source": "rewrite",
       "topic": {
-        "id": "takeaway_list",
-        "hook_type": "清单 / 实操",
-        "opening_index": 2,
+        "id": "judgement_first",
+        "hook_type": "判断 / 冲突",
+        "opening_index": 0,
         "sections": [
           "judgement",
           "what",
-          "takeaway",
-          "first_step",
           "boundary",
+          "first_step",
+          "takeaway",
           "labels"
         ],
-        "source_query": "topic:cli stars:{stars_min}..{stars_max} archived:false fork:false pushed:>{recent}",
-        "date": "2026-11-27"
+        "source_query": "created:>{since} stars:{stars_min}..{stars_max} archived:false fork:false",
+        "date": "2026-11-28"
       },
       "rewrite_guard_ok": true
     }
@@ -52,8 +56,8 @@
     {
       "platform": "zhihu",
       "status": "published",
-      "url": "https://zhuanlan.zhihu.com/p/2109711142465623204",
-      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2109711142465623204 | articles/drafts http=200 | articles/2109711142465623204/topics http=200 | v4/content/publish http=200",
+      "url": "https://zhuanlan.zhihu.com/p/2110063047406531870",
+      "detail": "最终 URL=https://zhuanlan.zhihu.com/p/2110063047406531870 | articles/drafts http=200 | v4/content/publish http=200",
       "http_status": null
     }
   ],
